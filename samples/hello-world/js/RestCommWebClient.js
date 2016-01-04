@@ -1,9 +1,10 @@
 var wrtcClient;
 var wrtcEventListener = undefined;
 var wrtcConfiguration = undefined;
-var currentCall = undefined;
+//var currentCall = undefined;
 var localStream;
 var remoteMedia;
+var username;
 var inCall = false;
 
 /*
@@ -48,15 +49,19 @@ WrtcEventListener.prototype.onWebRTCommCallRingingEvent = function(webRTCommCall
 {
 	console.log("WrtcEventListener::onWebRTCommCallRingingEvent");
 
-	// update connection status and notify Connection and Device listener (notice that both Device and Connection define listeners for disconnect event)
-	this.device.connection = new Connection('pending');
-	this.device.connection.isIncoming = true;
-	this.device.connection.parameters = {
-		From: webRTCommCall.callerPhoneNumber, 
-		To: '', 
-	};
+	if (webRTCommCall.incomingCallFlag == true) {
+		// update connection status and notify Connection and Device listener (notice that both Device and Connection define listeners for disconnect event)
+		this.device.connection = new Connection('pending');
+		this.device.connection.isIncoming = true;
+		this.device.connection.parameters = {
+			From: webRTCommCall.callerPhoneNumber, 
+			To: '', 
+		};
 
-	this.device.onIncoming(this.device.connection);
+		this.device.connection.webrtcommCall = webRTCommCall;
+		this.device.onIncoming(this.device.connection);
+		this.device.connection.onDisconnect = this.device.onDisconnect;
+	}
 };
 
 WrtcEventListener.prototype.onWebRTCommCallInProgressEvent = function(webRTCommCall) 
@@ -67,7 +72,8 @@ WrtcEventListener.prototype.onWebRTCommCallInProgressEvent = function(webRTCommC
 WrtcEventListener.prototype.onWebRTCommCallRingingBackEvent = function(webRTCommCall) 
 {
 	console.log("WrtcEventListener::onWebRTCommCallRingingBackEvent");
-	currentCall = webRTCommCall;
+	this.device.connection.webrtcommCall = webRTCommCall;
+	//currentCall = webRTCommCall;
 };
 
 WrtcEventListener.prototype.onWebRTCommCallOpenErrorEvent = function(webRTCommCall, error) 
@@ -83,15 +89,13 @@ WrtcEventListener.prototype.onWebRTCommCallClosedEvent = function(webRTCommCall)
 	this.device.connection.status = 'closed';
 	this.device.connection.onDisconnect(this.device.connection);
 	this.device.onDisconnect(this.device.connection);
-
-	//hangupButton.disabled = true;
-	//callButton.disabled = false;
 };
 
 WrtcEventListener.prototype.onWebRTCommCallOpenedEvent = function(webRTCommCall) 
 {
 	console.log("WrtcEventListener::onWebRTCommCallOpenedEvent: received remote stream");
-	currentCall = webRTCommCall;
+	//currentCall = webRTCommCall;
+	this.device.connection.webrtcommCall = webRTCommCall;
 
 	// add remote media to the remoteMedia html element
 	remoteMedia.src = URL.createObjectURL(webRTCommCall.getRemoteBundledAudioVideoMediaStream() ||
@@ -101,12 +105,14 @@ WrtcEventListener.prototype.onWebRTCommCallOpenedEvent = function(webRTCommCall)
 	// update connection status and notify connection listener
 	this.device.connection.status = 'open';
 	this.device.onConnect(this.device.connection);
+	inCall = true; 
 };
 
 WrtcEventListener.prototype.onWebRTCommCallHangupEvent = function(webRTCommCall) 
 {
 	console.log("WrtcEventListener::onWebRTCommCallHangupEvent");
-	currentCall = undefined;
+	this.device.connection.webrtcommCall = undefined;
+	//currentCall = undefined;
 };
 
 function Connection(status)
@@ -116,12 +122,28 @@ function Connection(status)
 	this.onDisconnect = undefined;
 	// not found in Twilio docs, but adding to be inline with our mobile SDKs
 	this.isIncoming = false;
+	this.webrtcommCall = undefined;  // lower level call structure
 	//this.onConnect = undefined;
 }
 
-Connection.prototype.accept = function()
+/**
+ * Accept an incoming call
+ * @param {dictionary} parameters - Parameters for the connection
+ */
+Connection.prototype.accept = function(parameters)
 {
+	var callConfiguration = {
+		displayName: username,
+		localMediaStream: localStream,
+		audioMediaFlag: true,
+		videoMediaFlag: parameters.videoEnabled,
+		messageMediaFlag: false
+	};
 
+	if (this.webrtcommCall) {
+		this.webrtcommCall.accept(callConfiguration);
+		this.status = 'open';
+	}
 }
 
 Connection.prototype.disconnect = function(callback)
@@ -135,7 +157,8 @@ Connection.prototype.disconnect = function(callback)
 		// we are not passed any argument, just disconnect
 		console.log("Connection: disconnecting");
 		if (inCall) {
-			currentCall.close();
+			this.webrtcommCall.close();
+			this.webrtcommCall = undefined;
 			inCall = false;
 		}
 	}
@@ -199,7 +222,7 @@ var RestCommClient = {
 					sipRegisterMode: register,
 					sipOutboundProxy: parameters.registrar,  // CHANGEME: setup your restcomm instance domain/ip and port
 					sipDomain: parameters.domain,  // CHANGEME: setup your restcomm instance domain/ip
-					sipDisplayName: 'Web-SDK',
+					sipDisplayName: parameters.username, //'Web-SDK',
 					sipUserName: parameters.username,  //'web-sdk',
 					sipLogin: parameters.username,  //'web-sdk',
 					sipPassword: parameters.password,  //'1234',
@@ -212,6 +235,8 @@ var RestCommClient = {
 					turnPassword: undefined,
 				}
 			};
+
+			username = parameters.username;
 
 			// create listener to retrieve webrtcomm events
 			wrtcEventListener = new WrtcEventListener(this);
@@ -283,11 +308,10 @@ var RestCommClient = {
 							 videoCodecsFilter: ''
 				};
 
-				currentCall = wrtcClient.call(parameters.username, callConfiguration);
-				inCall = true; 
+				this.connection.webrtcommCall = wrtcClient.call(parameters.username, callConfiguration);
+				this.connection.onDisconnect = this.onDisconnect;
+				//inCall = true; 
 
-				//callButton.disabled = true;
-				//hangupButton.disabled = false;
 
 				if (localStream.getVideoTracks().length > 0) {
 					console.log('Using video device: ' + localStream.getVideoTracks()[0].label);
@@ -298,13 +322,6 @@ var RestCommClient = {
 
 				return this.connection;
 			}
-		},
-
-		/**
-		 * Accept an incoming call
-		 * @param {dictionary} parameters - Parameters for the connection
-		 */
-		accept: function (parameters) {
 		},
 
 		/**

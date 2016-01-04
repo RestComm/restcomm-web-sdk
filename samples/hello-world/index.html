@@ -47,9 +47,10 @@ hangupButton.onclick = hangup;
 
 var currentConnection;
 var parameters = {
-	//registrar: 'wss://cloud.restcomm.com:5063',   // when not set or empty use registrar-less mode
-	//domain: 'cloud.restcomm.com',
-	username: 'web-sdk',
+	registrar: 'wss://cloud.restcomm.com:5063',   // when not set or empty use registrar-less mode
+	domain: 'cloud.restcomm.com',
+	//username: 'web-sdk',
+	username: 'antonis',
 	password: '1234',
 	localMedia: localMedia,
 	remoteMedia: remoteMedia,
@@ -93,11 +94,16 @@ function call() {
 }
 
 function accept() {
-	currentConnection.accept();
+	var parameters = {
+		videoEnabled: useVideo,
+	};
+	currentConnection.accept(parameters);
 }
 
 function hangup() {
 	RestCommClient.Device.disconnectAll();
+		$("#log").text("Connection ended");
+		remoteMedia.style.display = "none";
 }
 
 </script>
