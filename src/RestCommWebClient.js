@@ -20,9 +20,11 @@ function WrtcEventListener(device)  // = function ()
 }
 
 // General events (WebRTCommClient listener)
+// Client is ready
 WrtcEventListener.prototype.onWebRTCommClientOpenedEvent = function() 
 {
-    console.log("onWebRTCommClientOpenedEvent");
+   console.log("onWebRTCommClientOpenedEvent");
+	this.device.onReady(this.device);
 };
 
 WrtcEventListener.prototype.onWebRTCommClientOpenErrorEvent = function(error) 
@@ -41,9 +43,20 @@ WrtcEventListener.prototype.onGetUserMediaErrorEventHandler = function(error)
 };
 
 // Call related listeners (WebRTCommCall listener)
+// Ringing for incoming calls 
 WrtcEventListener.prototype.onWebRTCommCallRingingEvent = function(webRTCommCall) 
 {
 	console.log("WrtcEventListener::onWebRTCommCallRingingEvent");
+
+	// update connection status and notify Connection and Device listener (notice that both Device and Connection define listeners for disconnect event)
+	this.device.connection = new Connection('pending');
+	this.device.connection.isIncoming = true;
+	this.device.connection.parameters = {
+		From: webRTCommCall.callerPhoneNumber, 
+		To: '', 
+	};
+
+	this.device.onIncoming(this.device.connection);
 };
 
 WrtcEventListener.prototype.onWebRTCommCallInProgressEvent = function(webRTCommCall) 
@@ -101,6 +114,8 @@ function Connection(status)
 	this.status = status;
 	this.muted = false;
 	this.onDisconnect = undefined;
+	// not found in Twilio docs, but adding to be inline with our mobile SDKs
+	this.isIncoming = false;
 	//this.onConnect = undefined;
 }
 
@@ -133,6 +148,7 @@ var RestCommClient = {
 		onReady: null,
 		onError: null,
 		onConnect: null,
+		onIncoming: null,
 		onDisconnect: null,
 
 		connection: null,
@@ -154,25 +170,39 @@ var RestCommClient = {
 						//callButton.disabled = false;
 					},
 					function(error) {
-						trace("getUserMedia error: ", error);
+						console.log("getUserMedia error: ", error);
 					}
 			);
 
 			// store remote media element for later
 			remoteMedia = parameters.remoteMedia;
 
+			// if parameters.registrar is either unset or empty we should function is registrar-less mode
+			var register = false;
+			if (parameters.registrar && parameters.registrar != "") {
+				register = true;
+			}
+
+			// Once https://github.com/Mobicents/webrtcomm/issues/24 is fixed we can remove these lines and pass down registrar and domain to webrtcomm
+			if (!parameters.registrar || parameters.registrar == "") {
+				parameters.registrar = 'wss://cloud.restcomm.com:5063';
+			}
+			if (!parameters.domain || parameters.domain == "") {
+				parameters.domain = 'cloud.restcomm.com';
+			}
+
 			// setup WebRTClient
 			wrtcConfiguration = {
 				communicationMode: WebRTCommClient.prototype.SIP,
 				sip: {
-					sipUserAgent: 'TelScale RTM Olympus/1.0.0',
-					sipRegisterMode: true,
-					sipOutboundProxy: 'wss://cloud.restcomm.com:5063',  // CHANGEME: setup your restcomm instance domain/ip and port
-					sipDomain: 'cloud.restcomm.com',  // CHANGEME: setup your restcomm instance domain/ip
-					sipDisplayName: 'Antonis',
-					sipUserName: 'antonis',
-					sipLogin: 'antonis',
-					sipPassword: '1234',
+					sipUserAgent: 'TelScale RestComm Web Client 1.0.0 BETA4',
+					sipRegisterMode: register,
+					sipOutboundProxy: parameters.registrar,  // CHANGEME: setup your restcomm instance domain/ip and port
+					sipDomain: parameters.domain,  // CHANGEME: setup your restcomm instance domain/ip
+					sipDisplayName: parameters.username //'Web-SDK',
+					sipUserName: parameters.username,  //'web-sdk',
+					sipLogin: parameters.username,  //'web-sdk',
+					sipPassword: parameters.password,  //'1234',
 				},
 				RTCPeerConnection: {
 					iceServers: undefined,
@@ -201,6 +231,15 @@ var RestCommClient = {
 		},
 
 		/**
+		 * Register callback to be notified when an incoming call arrives
+		 * @param {function} callback - Callback to be invoked
+		 */
+		incoming: function(callback) {
+			console.log("assign incoming callback");
+			this.onIncoming = callback;
+		},
+
+		/**
 		 * Register callback to be notified when there's a Device error
 		 * @param {function} callback - Callback to be invoked
 		 */
@@ -216,7 +255,7 @@ var RestCommClient = {
 		 * invoked with two optional non function arguments it initiates a call towards a
 		 * remote party with the given params
 		 * @param {varies} arg1 - Callback to be invoked (a) or params (b)
-		 * @param {dictionary} arg2 - Audio constraints for the connection
+		 * @param {dictionary} arg2 - Parameters for the connection
 		 */
 		connect: function (arg1, arg2) {
 			if (typeof arg1 == "function") {
@@ -232,7 +271,7 @@ var RestCommClient = {
 				// not implemented yet
 				var audioConstraints = arg2;
 
-				this.connection = new Connection('pending');
+				this.connection = new Connection('connecting');
 
 				var callConfiguration = {
 							 displayName: wrtcConfiguration.sip.sipDisplayName,
@@ -251,26 +290,21 @@ var RestCommClient = {
 				//hangupButton.disabled = false;
 
 				if (localStream.getVideoTracks().length > 0) {
-					trace('Using video device: ' + localStream.getVideoTracks()[0].label);
+					console.log('Using video device: ' + localStream.getVideoTracks()[0].label);
 				}
 				if (localStream.getAudioTracks().length > 0) {
-					trace('Using audio device: ' + localStream.getAudioTracks()[0].label);
+					console.log('Using audio device: ' + localStream.getAudioTracks()[0].label);
 				}
 
 				return this.connection;
-				/*
-				if (!c.instance) 
-					throw new b.Exception("Run RestCommClient.Device.setup()");
-				if (0 < c.instance.connections.length) { 
-					c.instance.emit("error", {
-						message: "A connection is currently active"
-					});
-				}
-				else {
-					return c.instance.connect(arg1, arg2);
-				}
-				*/
 			}
+		},
+
+		/**
+		 * Accept an incoming call
+		 * @param {dictionary} parameters - Parameters for the connection
+		 */
+		accept: function (parameters) {
 		},
 
 		/**
