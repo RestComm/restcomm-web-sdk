@@ -415,7 +415,7 @@ var RestCommClient = {
 		 * @function Device#connect
 		 * @param {varies} arg1 - Callback to be invoked (a) or params (b)
 		 * @param {dictionary} arg2 - Parameters for the connection: <br>
-		 * <b>username</b> : Username for the called party, i.e. <i>+1235@staging.restcomm.com</i> <br>
+		 * <b>username</b> : Username for the called party, i.e. <i>+1235@cloud.restcomm.com</i> <br>
 		 * <b>videoEnabled</b> : Whether we want video enabled for the call (boolean) <br>
 		 */
 		connect: function (arg1, arg2) {
