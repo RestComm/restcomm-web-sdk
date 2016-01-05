@@ -27,6 +27,7 @@
     <button id="callButton">Call</button>
     <button id="acceptButton">Accept</button>
     <button id="hangupButton">Hang Up</button>
+    <button id="sendButton">Send</button>
     <div id="log">Loading RestComm client...</div>
   </div>
 
@@ -40,9 +41,11 @@ remoteMedia.style.display = "none";
 var callButton = document.getElementById("callButton");
 var acceptButton = document.getElementById("acceptButton");
 var hangupButton = document.getElementById("hangupButton");
+var sendButton = document.getElementById("sendButton");
 
 callButton.onclick = call;
 acceptButton.onclick = accept;
+sendButton.onclick = send;
 hangupButton.onclick = hangup;
 
 var currentConnection;
@@ -77,12 +80,17 @@ RestCommClient.Device.incoming(function(connection) {
 	currentConnection = connection;
 });
 
+RestCommClient.Device.message(function(parameters) {
+	$("#log").text("Incoming message from: " + parameters.From + ": " + parameters.Text);
+});
+
 RestCommClient.Device.disconnect(function(connection) {
 });
 
 function call() {
 	var parameters = {
-		username: '+1235@staging.restcomm.com',
+		//username: '+1235@staging.restcomm.com',
+		username: 'orestis@staging.restcomm.com',
 		videoEnabled: useVideo,
 	};
 	currentConnection = RestCommClient.Device.connect(parameters);
@@ -98,6 +106,14 @@ function accept() {
 		videoEnabled: useVideo,
 	};
 	currentConnection.accept(parameters);
+}
+
+function send() {
+	var parameters = {
+		username: 'orestis@staging.restcomm.com',
+		message: 'Hello there!',
+	};
+	RestCommClient.Device.sendMessage(parameters);
 }
 
 function hangup() {

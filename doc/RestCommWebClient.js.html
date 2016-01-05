@@ -1,4 +1,32 @@
-var wrtcClient;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: RestCommWebClient.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: RestCommWebClient.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>var wrtcClient;
 var wrtcEventListener = undefined;
 var wrtcConfiguration = undefined;
 var localStream;
@@ -140,12 +168,12 @@ WrtcEventListener.prototype.onWebRTCommMessageSendErrorEvent = function(message,
 
 /**
  * @class Connection 
- * @classdesc <p>Connection represents a call. A Connection can be either incoming or outgoing. Connections are not created by themselves but as a result on an action on Device. For example to initiate an outgoing connection you call [Device.connect(parameters)]{@link Device#connect} which instantiates and returns a new Connection. On the other hand when an incoming connection arrives and you have previously registered a callback for receiving incoming connection events by calling [RestCommClient.Device.incoming(callback)]{@link Device#incoming}, you will be notified through that callback and be passed the new Connection object that you can use to control the connection.</p>
- * <p>When an incoming connection arrives it is considered 'pending' until it is either accepted with [Connection.accept()]{@link Connection#accept} or rejected with [Connection.reject()]{@link Connection#reject}. Once the connection is accepted the Connection transitions to 'open' state.</p>
+ * @classdesc &lt;p>Connection represents a call. A Connection can be either incoming or outgoing. Connections are not created by themselves but as a result on an action on Device. For example to initiate an outgoing connection you call [Device.connect(parameters)]{@link Device#connect} which instantiates and returns a new Connection. On the other hand when an incoming connection arrives and you have previously registered a callback for receiving incoming connection events by calling [RestCommClient.Device.incoming(callback)]{@link Device#incoming}, you will be notified through that callback and be passed the new Connection object that you can use to control the connection.&lt;/p>
+ * &lt;p>When an incoming connection arrives it is considered 'pending' until it is either accepted with [Connection.accept()]{@link Connection#accept} or rejected with [Connection.reject()]{@link Connection#reject}. Once the connection is accepted the Connection transitions to 'open' state.&lt;/p>
  * 
- * <p>When an outgoing connection is created with [Device.connect(parameters)]{@link Connection#connect} it starts with state 'pending'. Once it starts ringing on the remote party it transitions to 'connecting'. When the remote party answers it, the Connection state transitions to 'open'.</p>
+ * &lt;p>When an outgoing connection is created with [Device.connect(parameters)]{@link Connection#connect} it starts with state 'pending'. Once it starts ringing on the remote party it transitions to 'connecting'. When the remote party answers it, the Connection state transitions to 'open'.&lt;/p>
  * 
- * <p>Once an Connection (either incoming or outgoing) is established (i.e. 'open') media can start flowing over it. DTMF digits can be sent over to the remote party using [Connection.sendDigits(digits)]{@link Connection#sendDigits}. When done with the Connection you can disconnect it with [Connection.disconnect()]{@link Connection#disconnect}.</p>
+ * &lt;p>Once an Connection (either incoming or outgoing) is established (i.e. 'open') media can start flowing over it. DTMF digits can be sent over to the remote party using [Connection.sendDigits(digits)]{@link Connection#sendDigits}. When done with the Connection you can disconnect it with [Connection.disconnect()]{@link Connection#disconnect}.&lt;/p>
  * @constructor
  * @public
  * @param  {status} Initial status for the Connection
@@ -153,7 +181,7 @@ WrtcEventListener.prototype.onWebRTCommMessageSendErrorEvent = function(message,
 function Connection(status)
 {
 	/**
-	 * Status of the Connection. Possible values are: <b>pending</b>, <b>connecting</b>, <b>open</b>, <b>closed</b>
+	 * Status of the Connection. Possible values are: &lt;b>pending&lt;/b>, &lt;b>connecting&lt;/b>, &lt;b>open&lt;/b>, &lt;b>closed&lt;/b>
 	 * @name Connection#status
 	 * @type String
 	 */
@@ -188,8 +216,8 @@ function Connection(status)
 
 /**
  * Accept an incoming call
- * @param {dictionary} parameters - Parameters for the connection <br>
- * - <b>'videoEnabled'</b> : Should we enable video internally when calling WebRTC getUserMedia() (boolean) <br>
+ * @param {dictionary} parameters - Parameters for the connection &lt;br>
+ * - &lt;b>'videoEnabled'&lt;/b> : Should we enable video internally when calling WebRTC getUserMedia() (boolean) &lt;br>
  */
 Connection.prototype.accept = function(parameters)
 {
@@ -238,8 +266,8 @@ Connection.prototype.disconnect = function(callback)
 var RestCommClient = {
 	/**
 	 * @class Device
-	 * @classdesc <p>A Device represents an abstraction of a communications device able to make and receive calls, send and receive messages etc. Remember that in order to be notified of RestComm Client events you need to 'register' for interesting events by passing callbacks. If you want to initiate a media connection towards another party you use [Device.connect(parameters)]{@link Device#connect} which returns a Connection object representing the new outgoing connection. From then on you can act on the new connection by applying Connection methods on the handle you got from [Device.connect(parameters)]{@link Device#connect}. If there’s an incoming connection and you have previously registered a callback for receiving incoming connection events by calling [Device.incoming(callback)]{@link Device#incoming}, you will be notified through that callback. At that point you can use Connection methods to accept or reject the connection.</p>
-	 * <p>As far as instant messages are concerned you can send a text message using [Device.sendMessage(parameters)]{@link Device#sendMessage} and you will be notified of an incoming message if you have previously registered a callback for incoming messages by calling [Device.message(callback)]{@link Device#message}.</p>
+	 * @classdesc &lt;p>A Device represents an abstraction of a communications device able to make and receive calls, send and receive messages etc. Remember that in order to be notified of RestComm Client events you need to 'register' for interesting events by passing callbacks. If you want to initiate a media connection towards another party you use [Device.connect(parameters)]{@link Device#connect} which returns a Connection object representing the new outgoing connection. From then on you can act on the new connection by applying Connection methods on the handle you got from [Device.connect(parameters)]{@link Device#connect}. If there’s an incoming connection and you have previously registered a callback for receiving incoming connection events by calling [Device.incoming(callback)]{@link Device#incoming}, you will be notified through that callback. At that point you can use Connection methods to accept or reject the connection.&lt;/p>
+	 * &lt;p>As far as instant messages are concerned you can send a text message using [Device.sendMessage(parameters)]{@link Device#sendMessage} and you will be notified of an incoming message if you have previously registered a callback for incoming messages by calling [Device.message(callback)]{@link Device#message}.&lt;/p>
 	 * @public
 	 */
 	Device: {
@@ -291,14 +319,14 @@ var RestCommClient = {
 		/**
 		 * Setup RestComm Web Client SDK 'Device' entity
 		 * @function Device#setup
-		 * @param {string} parameters - Parameters for the Device entity: <br>
-		 * <b>username</b> : Username for the client, i.e. <i>web-sdk</i> <br>
-		 * <b>password</b> : Password to be used in client authentication, i.e. <i>1234</i> <br>
-		 * <b>registrar</b> : URL for the registrar, i.e. <i>wss://cloud.restcomm.com:5063</i> <br>
-		 * <b>domain</b> : domain to be used, i.e. <i>cloud.restcomm.com</i> <br>
-		 * <b>localMedia</b> : Local media stream, usually an HTML5 video or audio element <br>
-		 * <b>remoteMedia</b> : Remote media stream, usually an HTML5 video or audio element <br>
-		 * <b>videoEnabled</b> : Should we enable video internally when calling WebRTC getUserMedia() (boolean) <br>
+		 * @param {string} parameters - Parameters for the Device entity: &lt;br>
+		 * &lt;b>username&lt;/b> : Username for the client, i.e. &lt;i>web-sdk&lt;/i> &lt;br>
+		 * &lt;b>password&lt;/b> : Password to be used in client authentication, i.e. &lt;i>1234&lt;/i> &lt;br>
+		 * &lt;b>registrar&lt;/b> : URL for the registrar, i.e. &lt;i>wss://cloud.restcomm.com:5063&lt;/i> &lt;br>
+		 * &lt;b>domain&lt;/b> : domain to be used, i.e. &lt;i>cloud.restcomm.com&lt;/i> &lt;br>
+		 * &lt;b>localMedia&lt;/b> : Local media stream, usually an HTML5 video or audio element &lt;br>
+		 * &lt;b>remoteMedia&lt;/b> : Remote media stream, usually an HTML5 video or audio element &lt;br>
+		 * &lt;b>videoEnabled&lt;/b> : Should we enable video internally when calling WebRTC getUserMedia() (boolean) &lt;br>
 		 */
 		setup: function(parameters) {
 			console.log("setup");
@@ -322,7 +350,7 @@ var RestCommClient = {
 
 			// if parameters.registrar is either unset or empty we should function is registrar-less mode
 			var register = false;
-			if (parameters.registrar && parameters.registrar != "") {
+			if (parameters.registrar &amp;&amp; parameters.registrar != "") {
 				register = true;
 			}
 
@@ -414,9 +442,9 @@ var RestCommClient = {
 		 * remote party with the given params
 		 * @function Device#connect
 		 * @param {varies} arg1 - Callback to be invoked (a) or params (b)
-		 * @param {dictionary} arg2 - Parameters for the connection: <br>
-		 * <b>username</b> : Username for the called party, i.e. <i>+1235@staging.restcomm.com</i> <br>
-		 * <b>videoEnabled</b> : Whether we want video enabled for the call (boolean) <br>
+		 * @param {dictionary} arg2 - Parameters for the connection: &lt;br>
+		 * &lt;b>username&lt;/b> : Username for the called party, i.e. &lt;i>+1235@staging.restcomm.com&lt;/i> &lt;br>
+		 * &lt;b>videoEnabled&lt;/b> : Whether we want video enabled for the call (boolean) &lt;br>
 		 */
 		connect: function (arg1, arg2) {
 			if (typeof arg1 == "function") {
@@ -463,15 +491,15 @@ var RestCommClient = {
 		/**
 		 * Send text message
 		 * @function Device#sendMessage
-		 * @param {dictionary} parameters - Parameters for the message: <br>
-		 * <b>username</b> : target URI <br>
-		 * <b>message</b> : text message to send
+		 * @param {dictionary} parameters - Parameters for the message: &lt;br>
+		 * &lt;b>username&lt;/b> : target URI &lt;br>
+		 * &lt;b>message&lt;/b> : text message to send
 		 */
 		sendMessage: function (parameters) {
 			// right now we are not interested in sending message directly to an ongoing call since it will complicate the API. But let's leave this piece of code
 			// around because we might need it in the future
 			/*
-			if (this.connection && this.connection.webrtcommCall && this.connection.webrtcommCall.peerConnectionState === 'established') {
+			if (this.connection &amp;&amp; this.connection.webrtcommCall &amp;&amp; this.connection.webrtcommCall.peerConnectionState === 'established') {
 				this.connection.webrtcommCall.sendMessage(parameters.message);
 			}
 			*/
@@ -500,3 +528,26 @@ var RestCommClient = {
 		},
 	}
 }
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Connection.html">Connection</a></li><li><a href="Device.html">Device</a></li></ul><h3>Namespaces</h3><ul><li><a href="RestCommClient.html">RestCommClient</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Jan 05 2016 16:53:10 GMT+0200 (EET)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

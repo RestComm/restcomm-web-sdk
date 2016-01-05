@@ -1,1 +1,1 @@
-jsdoc -d ./restcomm-webrtc-sdk ../build/RestCommWebClient.js
+jsdoc -d . ../src/RestCommWebClient.js README.md
