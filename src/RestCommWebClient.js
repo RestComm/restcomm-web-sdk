@@ -55,8 +55,8 @@ WrtcEventListener.prototype.onWebRTCommCallRingingEvent = function(webRTCommCall
 		this.device.connection = new Connection('pending');
 		this.device.connection.isIncoming = true;
 		this.device.connection.parameters = {
-			From: webRTCommCall.callerPhoneNumber, 
-			To: '', 
+			'From': webRTCommCall.callerPhoneNumber, 
+			'To': '', 
 		};
 
 		this.device.connection.webrtcommCall = webRTCommCall;
@@ -122,8 +122,8 @@ WrtcEventListener.prototype.onWebRTCommCallHangupEvent = function(webRTCommCall)
 WrtcEventListener.prototype.onWebRTCommMessageReceivedEvent = function(message) {
 	console.log("WrtcEventListener::onWebRTCommMessageReceivedEvent");
 	var parameters = {
-		From: message.from,
-		Text: message.text,
+		'From': message.from,
+		'Text': message.text,
 	};
 
 	this.device.onMessage(parameters);
@@ -197,7 +197,7 @@ Connection.prototype.accept = function(parameters)
 		displayName: username,
 		localMediaStream: localStream,
 		audioMediaFlag: true,
-		videoMediaFlag: parameters.videoEnabled,
+		videoMediaFlag: parameters['video-enabled'],
 		messageMediaFlag: false
 	};
 
@@ -304,11 +304,11 @@ var RestCommClient = {
 			console.log("setup");
 
 			// webrtc getUserMedia
-			getUserMedia({audio:true, video:parameters.videoEnabled}, 
+			getUserMedia({audio:true, video:parameters['video-enabled']}, 
 					function(stream) {
 						// got local stream as result of getUserMedia() -add it to localVideo html element
 						console.log("Received local stream");
-						parameters.localMedia.src = URL.createObjectURL(stream);
+						parameters['local-media'].src = URL.createObjectURL(stream);
 						localStream = stream;
 						//callButton.disabled = false;
 					},
@@ -318,20 +318,20 @@ var RestCommClient = {
 			);
 
 			// store remote media element for later
-			remoteMedia = parameters.remoteMedia;
+			remoteMedia = parameters['remote-media'];
 
 			// if parameters.registrar is either unset or empty we should function is registrar-less mode
 			var register = false;
-			if (parameters.registrar && parameters.registrar != "") {
+			if (parameters['registrar'] && parameters['registrar'] != "") {
 				register = true;
 			}
 
 			// Once https://github.com/Mobicents/webrtcomm/issues/24 is fixed we can remove these lines and pass down registrar and domain to webrtcomm
-			if (!parameters.registrar || parameters.registrar == "") {
-				parameters.registrar = 'wss://cloud.restcomm.com:5063';
+			if (!parameters['registrar'] || parameters['registrar'] == "") {
+				parameters['registrar'] = 'wss://cloud.restcomm.com:5063';
 			}
-			if (!parameters.domain || parameters.domain == "") {
-				parameters.domain = 'cloud.restcomm.com';
+			if (!parameters['domain'] || parameters['domain'] == "") {
+				parameters['domain'] = 'cloud.restcomm.com';
 			}
 
 			// setup WebRTClient
@@ -340,12 +340,12 @@ var RestCommClient = {
 				sip: {
 					sipUserAgent: 'TelScale RestComm Web Client 1.0.0 BETA4',
 					sipRegisterMode: register,
-					sipOutboundProxy: parameters.registrar,  // CHANGEME: setup your restcomm instance domain/ip and port
-					sipDomain: parameters.domain,  // CHANGEME: setup your restcomm instance domain/ip
-					sipDisplayName: parameters.username, //'Web-SDK',
-					sipUserName: parameters.username,  //'web-sdk',
-					sipLogin: parameters.username,  //'web-sdk',
-					sipPassword: parameters.password,  //'1234',
+					sipOutboundProxy: parameters['registrar'],
+					sipDomain: parameters['domain'],
+					sipDisplayName: parameters['username'],
+					sipUserName: parameters['username'],
+					sipLogin: parameters['username'],
+					sipPassword: parameters['password'],
 				},
 				RTCPeerConnection: {
 					iceServers: undefined,
@@ -356,7 +356,7 @@ var RestCommClient = {
 				}
 			};
 
-			username = parameters.username;
+			username = parameters['username'];
 
 			// create listener to retrieve webrtcomm events
 			wrtcEventListener = new WrtcEventListener(this);
@@ -438,13 +438,13 @@ var RestCommClient = {
 							 displayName: wrtcConfiguration.sip.sipDisplayName,
 							 localMediaStream: localStream,
 							 audioMediaFlag: true,
-							 videoMediaFlag: parameters.videoEnabled,
+							 videoMediaFlag: parameters['video-enabled'],
 							 messageMediaFlag: false,
 							 audioCodecsFilter: '',
 							 videoCodecsFilter: ''
 				};
 
-				this.connection.webrtcommCall = wrtcClient.call(parameters.username, callConfiguration);
+				this.connection.webrtcommCall = wrtcClient.call(parameters['username'], callConfiguration);
 				this.connection.onDisconnect = this.onDisconnect;
 				//inCall = true; 
 
@@ -476,7 +476,7 @@ var RestCommClient = {
 			}
 			*/
 
-			wrtcClient.sendMessage(parameters.username, parameters.message);
+			wrtcClient.sendMessage(parameters['username'], parameters['message']);
 		},
 
 		/**

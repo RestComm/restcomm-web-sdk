@@ -11,17 +11,16 @@
 <style>
 </style>
 	 <!-- Need to hide those 3 dependencies -->
-    <script src='js/adapter.js'></script>
-    <script src='js/jain-sip.js'></script>
-    <script src='js/WebRTComm.js'></script>
-    <script src='js/RestCommWebClient.js'></script>
-    <script type="text/javascript"
-      src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js">
+    <script type="text/javascript" src='js/adapter.js'></script>
+    <script type="text/javascript" src='js/jain-sip.js'></script>
+    <script type="text/javascript" src='js/WebRTComm.js'></script>
+    <script type="text/javascript" src='js/RestCommWebClient.js'></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js">
     </script>
 </head>
 <body>
   <video id="localMedia" autoplay muted></video>
-  <video id="remoteMedia" autoplay muted></video>
+  <video id="remoteMedia" autoplay></video>
 
   <div>
     <button id="callButton">Call</button>
@@ -50,14 +49,11 @@ hangupButton.onclick = hangup;
 
 var currentConnection;
 var parameters = {
-	registrar: 'wss://staging.restcomm.com:5063',   // when not set or empty use registrar-less mode
-	domain: 'staging.restcomm.com',
-	//username: 'web-sdk',
-	username: 'antonis',
-	password: '1234',
-	localMedia: localMedia,
-	remoteMedia: remoteMedia,
-	videoEnabled: useVideo,
+	'username': 'web-sdk',
+	'password': '1234',
+	'local-media': localMedia,
+	'remote-media': remoteMedia,
+	'video-enabled': useVideo,
 };
 
 RestCommClient.Device.setup(parameters);
@@ -89,9 +85,8 @@ RestCommClient.Device.disconnect(function(connection) {
 
 function call() {
 	var parameters = {
-		//username: '+1235@staging.restcomm.com',
-		username: 'orestis@staging.restcomm.com',
-		videoEnabled: useVideo,
+		'username': '+1235@staging.restcomm.com',
+		'video-enabled': useVideo,
 	};
 	currentConnection = RestCommClient.Device.connect(parameters);
 
@@ -103,15 +98,15 @@ function call() {
 
 function accept() {
 	var parameters = {
-		videoEnabled: useVideo,
+		'video-enabled': useVideo,
 	};
 	currentConnection.accept(parameters);
 }
 
 function send() {
 	var parameters = {
-		username: 'orestis@staging.restcomm.com',
-		message: 'Hello there!',
+		'username': 'orestis@staging.restcomm.com',
+		'message': 'Hello there!',
 	};
 	RestCommClient.Device.sendMessage(parameters);
 }
