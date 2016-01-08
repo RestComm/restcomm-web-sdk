@@ -208,6 +208,18 @@ Connection.prototype.accept = function(parameters)
 }
 
 /**
+ * Sends DTMF digits over this Connection
+ * @param {String} digits - DTMF digits to send across the Connection
+ */
+Connection.prototype.sendDigits = function(digits)
+{
+	console.log("Connection: sendDigits");
+	if (this.webrtcommCall) {
+		this.webrtcommCall.sendDTMF(digits);
+	}
+}
+
+/**
  * This function has a dual purpose: a. if invoked with a single function
  * argument it registers a callback to be notified when the connection is
  * disconnected, and b. if invoked with no arguments it disconnects the connection

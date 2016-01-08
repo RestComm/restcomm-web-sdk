@@ -27,6 +27,7 @@
     <button id="acceptButton">Accept</button>
     <button id="hangupButton">Hang Up</button>
     <button id="sendButton">Send</button>
+    <button id="sendDigitButton">Send DTMF 1</button>
     <div id="log">Loading RestComm client...</div>
   </div>
 
@@ -41,11 +42,13 @@ var callButton = document.getElementById("callButton");
 var acceptButton = document.getElementById("acceptButton");
 var hangupButton = document.getElementById("hangupButton");
 var sendButton = document.getElementById("sendButton");
+var sendDigitButton = document.getElementById("sendDigitButton");
 
 callButton.onclick = call;
 acceptButton.onclick = accept;
 sendButton.onclick = send;
 hangupButton.onclick = hangup;
+sendDigitButton.onclick = sendDigit;
 
 var currentConnection;
 var parameters = {
@@ -85,7 +88,7 @@ RestCommClient.Device.disconnect(function(connection) {
 
 function call() {
 	var parameters = {
-		'username': '+1235@staging.restcomm.com',
+		'username': '+1236@staging.restcomm.com',
 		'video-enabled': useVideo,
 	};
 	currentConnection = RestCommClient.Device.connect(parameters);
@@ -109,6 +112,10 @@ function send() {
 		'message': 'Hello there!',
 	};
 	RestCommClient.Device.sendMessage(parameters);
+}
+
+function sendDigit() {
+	currentConnection.sendDigits('1');
 }
 
 function hangup() {
