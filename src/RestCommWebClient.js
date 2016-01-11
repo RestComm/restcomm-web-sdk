@@ -15,7 +15,10 @@ $.getScript("js/WebRTComm.js", function() {
 // --- WrtcEventListener callbacks
 function WrtcEventListener(device)
 {
-	console.log("WrtcEventListener constructor");
+	if (device.debugEnabled) {
+		console.log("WrtcEventListener::WrtcEventListener constructor");
+	}
+
 	this.device = device;
 }
 
@@ -24,23 +27,36 @@ function WrtcEventListener(device)
 // Client is ready
 WrtcEventListener.prototype.onWebRTCommClientOpenedEvent = function() 
 {
-   console.log("onWebRTCommClientOpenedEvent");
+	if (this.device.debugEnabled) {
+	   console.log("WrtcEventListener::onWebRTCommClientOpenedEvent");
+	}
+
 	this.device.onReady(this.device);
 };
 
 WrtcEventListener.prototype.onWebRTCommClientOpenErrorEvent = function(error) 
 {
-    console.log("onWebRTCommClientOpenErrorEvent");
+	if (this.device.debugEnabled) {
+   	console.log("WrtcEventListener::onWebRTCommClientOpenErrorEvent" + error);
+	}
+
+	this.device.onError("Error setting up Device" + error);
 };
 
 WrtcEventListener.prototype.onWebRTCommClientClosedEvent = function() 
 {
-	console.log("onWebRTCommClientClosedEvent");
+	if (this.device.debugEnabled) {
+		console.log("WrtcEventListener::onWebRTCommClientClosedEvent");
+	}
 };
 
 WrtcEventListener.prototype.onGetUserMediaErrorEventHandler = function(error) 
 {
-	console.debug('MobicentsWebRTCPhoneController:onGetUserMediaErrorEventHandler(): error='+error);
+	if (this.device.debugEnabled) {
+		console.debug('WrtcEventListener::onGetUserMediaErrorEventHandler(): error=' + error);
+	}
+
+	this.device.onError("Media error: " + error);
 };
 
 // Call related listeners (WebRTCommCall listener)
@@ -48,11 +64,13 @@ WrtcEventListener.prototype.onGetUserMediaErrorEventHandler = function(error)
 // Ringing for incoming calls 
 WrtcEventListener.prototype.onWebRTCommCallRingingEvent = function(webRTCommCall) 
 {
-	console.log("WrtcEventListener::onWebRTCommCallRingingEvent");
+	if (this.device.debugEnabled) {
+		console.log("WrtcEventListener::onWebRTCommCallRingingEvent");
+	}
 
 	if (webRTCommCall.incomingCallFlag == true) {
 		// update connection status and notify Connection and Device listener (notice that both Device and Connection define listeners for disconnect event)
-		this.device.connection = new Connection('pending');
+		this.device.connection = new Connection(this.device, 'pending');
 		this.device.connection.isIncoming = true;
 		this.device.connection.parameters = {
 			'From': webRTCommCall.callerPhoneNumber, 
@@ -67,24 +85,36 @@ WrtcEventListener.prototype.onWebRTCommCallRingingEvent = function(webRTCommCall
 
 WrtcEventListener.prototype.onWebRTCommCallInProgressEvent = function(webRTCommCall) 
 {
-	console.log("WrtcEventListener::onWebRTCommCallInProgressEvent");
+	if (this.device.debugEnabled) {
+		console.log("WrtcEventListener::onWebRTCommCallInProgressEvent");
+	}
 };
 
 WrtcEventListener.prototype.onWebRTCommCallRingingBackEvent = function(webRTCommCall) 
 {
-	console.log("WrtcEventListener::onWebRTCommCallRingingBackEvent");
+	if (this.device.debugEnabled) {
+		console.log("WrtcEventListener::onWebRTCommCallRingingBackEvent");
+	}
 	this.device.connection.webrtcommCall = webRTCommCall;
 	//currentCall = webRTCommCall;
 };
 
 WrtcEventListener.prototype.onWebRTCommCallOpenErrorEvent = function(webRTCommCall, error) 
 {
-	console.log("WrtcEventListener::onWebRTCommCallOpenErrorEvent");
+	if (this.device.debugEnabled) {
+		console.log("WrtcEventListener::onWebRTCommCallOpenErrorEvent");
+	}
+
+	if (this.device.connection) {
+		this.device.connection.onError("Error connecting " + error);
+	}
 };
 
 WrtcEventListener.prototype.onWebRTCommCallClosedEvent = function(webRTCommCall) 
 {
-	console.log("WrtcEventListener::onWebRTCommCallClosedEvent");
+	if (this.device.debugEnabled) {
+		console.log("WrtcEventListener::onWebRTCommCallClosedEvent");
+	}
 
 	// update connection status and notify Connection and Device listener (notice that both Device and Connection define listeners for disconnect event)
 	this.device.connection.status = 'closed';
@@ -94,7 +124,10 @@ WrtcEventListener.prototype.onWebRTCommCallClosedEvent = function(webRTCommCall)
 
 WrtcEventListener.prototype.onWebRTCommCallOpenedEvent = function(webRTCommCall) 
 {
-	console.log("WrtcEventListener::onWebRTCommCallOpenedEvent: received remote stream");
+	if (this.device.debugEnabled) {
+		console.log("WrtcEventListener::onWebRTCommCallOpenedEvent: received remote stream");
+	}
+
 	//currentCall = webRTCommCall;
 	this.device.connection.webrtcommCall = webRTCommCall;
 
@@ -111,7 +144,10 @@ WrtcEventListener.prototype.onWebRTCommCallOpenedEvent = function(webRTCommCall)
 
 WrtcEventListener.prototype.onWebRTCommCallHangupEvent = function(webRTCommCall) 
 {
-	console.log("WrtcEventListener::onWebRTCommCallHangupEvent");
+	if (this.device.debugEnabled) {
+		console.log("WrtcEventListener::onWebRTCommCallHangupEvent");
+	}
+
 	this.device.connection.webrtcommCall = undefined;
 	//currentCall = undefined;
 };
@@ -120,7 +156,10 @@ WrtcEventListener.prototype.onWebRTCommCallHangupEvent = function(webRTCommCall)
 
 // Message arrived
 WrtcEventListener.prototype.onWebRTCommMessageReceivedEvent = function(message) {
-	console.log("WrtcEventListener::onWebRTCommMessageReceivedEvent");
+	if (this.device.debugEnabled) {
+		console.log("WrtcEventListener::onWebRTCommMessageReceivedEvent");
+	}
+
 	var parameters = {
 		'From': message.from,
 		'Text': message.text,
@@ -130,11 +169,17 @@ WrtcEventListener.prototype.onWebRTCommMessageReceivedEvent = function(message) 
 };
 
 WrtcEventListener.prototype.onWebRTCommMessageSentEvent = function(message) {
-	console.log("WrtcEventListener::onWebRTCommMessageSentEvent");
+	if (this.device.debugEnabled) {
+		console.log("WrtcEventListener::onWebRTCommMessageSentEvent");
+	}
 };
 
 WrtcEventListener.prototype.onWebRTCommMessageSendErrorEvent = function(message, error) {
-	console.log("WrtcEventListener::onWebRTCommMessageSendErrorEvent");
+	if (this.device.debugEnabled) {
+		console.log("WrtcEventListener::onWebRTCommMessageSendErrorEvent");
+	}
+
+	this.device.onError("Error sending text message: " + error);
 };
 
 
@@ -150,8 +195,11 @@ WrtcEventListener.prototype.onWebRTCommMessageSendErrorEvent = function(message,
  * @public
  * @param  {status} Initial status for the Connection
  */
-function Connection(status)
+function Connection(device, status)
 {
+	// Device object where this Connection belongs to
+	this.device = device;
+
 	/**
 	 * Status of the Connection. Possible values are: <b>pending</b>, <b>connecting</b>, <b>open</b>, <b>closed</b>
 	 * @name Connection#status
@@ -193,6 +241,10 @@ function Connection(status)
  */
 Connection.prototype.accept = function(parameters)
 {
+	if (this.device.debugEnabled) {
+		console.log("Connection::accept():" + JSON.stringify(parameters));
+	}
+
 	var callConfiguration = {
 		displayName: username,
 		localMediaStream: localStream,
@@ -213,7 +265,10 @@ Connection.prototype.accept = function(parameters)
  */
 Connection.prototype.sendDigits = function(digits)
 {
-	console.log("Connection: sendDigits");
+	if (this.device.debugEnabled) {
+		console.log("Connection::sendDigits(): " + JSON.stringify(digits));
+	}
+
 	if (this.webrtcommCall) {
 		this.webrtcommCall.sendDTMF(digits);
 	}
@@ -229,12 +284,18 @@ Connection.prototype.disconnect = function(callback)
 {
 	if (callback !== undefined) {
 		// we are passed a callback, need to keep the listener for later use
-		console.log("Connection: assign disconnect callback");
+		if (this.device.debugEnabled) {
+			console.log("Connection: assign disconnect callback");
+		}
+
 		this.onDisconnect = callback;
 	}
 	else {
 		// we are not passed any argument, just disconnect
-		console.log("Connection: disconnecting");
+		if (this.device.debugEnabled) {
+			console.log("Connection: disconnecting");
+		}
+
 		if (inCall) {
 			this.webrtcommCall.close();
 			this.webrtcommCall = undefined;
@@ -299,6 +360,9 @@ var RestCommClient = {
 		 * @type Object
 		 */
 		connection: null,
+
+		// is debug logging enabled
+		debugEnabled: false,
 		
 		/**
 		 * Setup RestComm Web Client SDK 'Device' entity
@@ -311,21 +375,32 @@ var RestCommClient = {
 		 * <b>localMedia</b> : Local media stream, usually an HTML5 video or audio element <br>
 		 * <b>remoteMedia</b> : Remote media stream, usually an HTML5 video or audio element <br>
 		 * <b>videoEnabled</b> : Should we enable video internally when calling WebRTC getUserMedia() (boolean) <br>
+		 * <b>debug</b> : Enable debug logging in browser console <br>
 		 */
 		setup: function(parameters) {
-			console.log("setup");
+			if (parameters['debug'] && parameters['debug'] == true) {
+				this.debugEnabled = true;
+			}
+
+			if (this.debugEnabled) {
+				console.log("Device::setup(): " + JSON.stringify(parameters));
+			}
 
 			// webrtc getUserMedia
 			getUserMedia({audio:true, video:parameters['video-enabled']}, 
 					function(stream) {
 						// got local stream as result of getUserMedia() -add it to localVideo html element
-						console.log("Received local stream");
+						if (this.debugEnabled) {
+							console.log("Device::setup(), received local WebRTC stream");
+						}
 						parameters['local-media'].src = URL.createObjectURL(stream);
 						localStream = stream;
 						//callButton.disabled = false;
 					},
 					function(error) {
-						console.log("getUserMedia error: ", error);
+						console.log("Device::setup(), getUserMedia error: ", error);
+
+						this.onError("Error in getUserMedia()" + error);
 					}
 			);
 
@@ -384,7 +459,10 @@ var RestCommClient = {
 		 * @param {function} callback - Callback to be invoked
 		 */
 		ready: function(callback) {
-			console.log("assign ready callback");
+			if (this.debugEnabled) {
+				console.log("Device::ready(), assigning ready callback");
+			}
+
 			this.onReady = callback;
 		},
 
@@ -394,7 +472,10 @@ var RestCommClient = {
 		 * @param {function} callback - Callback to be invoked
 		 */
 		incoming: function(callback) {
-			console.log("assign incoming callback");
+			if (this.debugEnabled) {
+				console.log("Device::incoming(), assigning incoming callback");
+			}
+
 			this.onIncoming = callback;
 		},
 
@@ -404,7 +485,10 @@ var RestCommClient = {
 		 * @param {function} callback - Callback to be invoked
 		 */
 		message: function(callback) {
-			console.log("assign message callback");
+			if (this.debugEnabled) {
+				console.log("Device::message(), assigning message callback");
+			}
+
 			this.onMessage = callback;
 		},
 
@@ -414,7 +498,10 @@ var RestCommClient = {
 		 * @param {function} callback - Callback to be invoked
 		 */
 		error: function (callback) {
-			console.log("assign error callback");
+			if (this.debugEnabled) {
+				console.log("Device::error(), assigning error callback");
+			}
+
 			this.onError = callback;
 		},
 
@@ -433,18 +520,23 @@ var RestCommClient = {
 		connect: function (arg1, arg2) {
 			if (typeof arg1 == "function") {
 				// we are passed a callback, need to keep the listener for later use
+				if (this.debugEnabled) {
+					console.log("Device::connect(), assigning connect callback");
+				}
 				var callback = arg1;
-				console.log("assign ready callback");
 				this.onConnect = callback;
 			}
 			else {
 				// we are passed regular arguments, let's connect
-				console.log("connect");
+				if (this.debugEnabled) {
+					console.log("Device::connect(): " + JSON.stringify(arg1));
+				}
+
 				var parameters = arg1;
 				// not implemented yet
 				var audioConstraints = arg2;
 
-				this.connection = new Connection('connecting');
+				this.connection = new Connection(this, 'connecting');
 
 				var callConfiguration = {
 							 displayName: wrtcConfiguration.sip.sipDisplayName,
@@ -462,10 +554,14 @@ var RestCommClient = {
 
 
 				if (localStream.getVideoTracks().length > 0) {
-					console.log('Using video device: ' + localStream.getVideoTracks()[0].label);
+					if (this.debugEnabled) {
+						console.log("Device::connect(): Using video device: " + localStream.getVideoTracks()[0].label);
+					}
 				}
 				if (localStream.getAudioTracks().length > 0) {
-					console.log('Using audio device: ' + localStream.getAudioTracks()[0].label);
+					if (this.debugEnabled) {
+						console.log("Device::connect(): Using audio device: " + localStream.getAudioTracks()[0].label);
+					}
 				}
 
 				return this.connection;
@@ -487,7 +583,10 @@ var RestCommClient = {
 				this.connection.webrtcommCall.sendMessage(parameters.message);
 			}
 			*/
-
+			
+			if (this.debugEnabled) {
+				console.log("Device::sendMessage(): " + JSON.stringify(parameters));
+			}
 			wrtcClient.sendMessage(parameters['username'], parameters['message']);
 		},
 
@@ -497,7 +596,10 @@ var RestCommClient = {
 		 * @param {function} callback - Callback to be invoked
 		 */
 		disconnect: function (callback) {
-			console.log("assign disconnect callback");
+			if (this.debugEnabled) {
+				console.log("Device::disconnect(), assigning disconnect callback");
+			}
+
 			this.onDisconnect = callback;
 		},
 
@@ -506,9 +608,12 @@ var RestCommClient = {
 		 * @function Device#disconnectAll
 		 */
 		disconnectAll: function () {
-			console.log("disconnectAll");
+			if (this.debugEnabled) {
+				console.log("Device::disconnectAll()");
+			}
+
 			this.connection.disconnect();
-			//this.onDisconnect(this);
+			this.onDisconnect(this);
 		},
 	}
 }
