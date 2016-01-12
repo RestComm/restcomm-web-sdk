@@ -32,12 +32,16 @@
     <button id="muteIncomingButton">Mute Incoming</button>
     <button id="ignoreIncomingButton">Ignore Incoming</button>
     <button id="rejectIncomingButton">Reject Incoming</button>
+    <button id="muteAudioButton">Mute Audio</button>
+    <button id="unmuteAudioButton">Unmute Audio</button>
+    <button id="muteVideoButton">Mute Video</button>
+    <button id="unmuteVideoButton">Unmute Video</button>
     <div id="log">Loading RestComm client...</div>
   </div>
 
 <script>
 
-var useVideo = false;
+var useVideo = true;
 
 var localMedia = document.getElementById("localMedia");
 var remoteMedia = document.getElementById("remoteMedia");
@@ -51,6 +55,10 @@ var destroyButton = document.getElementById("destroyButton");
 var muteIncomingButton = document.getElementById("muteIncomingButton");
 var ignoreIncomingButton = document.getElementById("ignoreIncomingButton");
 var rejectIncomingButton = document.getElementById("rejectIncomingButton");
+var muteAudioButton = document.getElementById("muteAudioButton");
+var unmuteAudioButton = document.getElementById("unmuteAudioButton");
+var muteVideoButton = document.getElementById("muteVideoButton");
+var unmuteVideoButton = document.getElementById("unmuteVideoButton");
 
 callButton.onclick = call;
 acceptButton.onclick = accept;
@@ -61,6 +69,10 @@ destroyButton.onclick = destroy;
 muteIncomingButton.onclick = muteIncoming;
 ignoreIncomingButton.onclick = ignoreIncoming;
 rejectIncomingButton.onclick = rejectIncoming;
+muteAudioButton.onclick = muteAudio;
+unmuteAudioButton.onclick = unmuteAudio;
+muteVideoButton.onclick = muteVideo;
+unmuteVideoButton.onclick = unmuteVideo;
 
 var currentConnection;
 var parameters = {
@@ -130,6 +142,13 @@ function call() {
 	currentConnection.error(function(error) {
 		$("#log").text("Connection error: " + error);
 	});
+
+	currentConnection.mute(function(muted, connection) {
+		$("#log").text("Connection audio muted: " + muted);
+	});
+	currentConnection.muteVideo(function(muted, connection) {
+		$("#log").text("Connection video muted: " + muted);
+	});
 }
 
 function accept() {
@@ -173,6 +192,20 @@ function rejectIncoming() {
 	RestCommClient.Device.activeConnection().reject();
 }
 
+function muteAudio() {
+	RestCommClient.Device.activeConnection().mute(true);
+}
+
+function unmuteAudio() {
+	RestCommClient.Device.activeConnection().mute(false);
+}
+function muteVideo() {
+	RestCommClient.Device.activeConnection().muteVideo(true);
+}
+
+function unmuteVideo() {
+	RestCommClient.Device.activeConnection().muteVideo(false);
+}
 </script>
 
 </body>

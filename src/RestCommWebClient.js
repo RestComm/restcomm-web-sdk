@@ -244,11 +244,17 @@ function Connection(device, status)
 	 */
 	this.status = status;
 	/**
-	 * Whether Connection is muted or not
+	 * Whether Connection's audio is muted or not
 	 * @name Connection#muted
 	 * @type Boolean
 	 */
 	this.muted = false;
+	/**
+	 * Whether Connection's video is muted or not
+	 * @name Connection#videoMuted
+	 * @type Boolean
+	 */
+	this.videoMuted = false;
 	/**
 	 * Callback for when there is a Connection error
 	 * @name Connection#onError
@@ -261,6 +267,18 @@ function Connection(device, status)
 	 * @type Function
 	 */
 	this.onDisconnect = null;
+	/**
+	 * Callback for when Connection's audio is muted/unmuted
+	 * @name Connection#onMute
+	 * @type Function
+	 */
+	this.onMute = null;
+	/**
+	 * Callback for when Connection's video is muted/unmuted
+	 * @name Connection#onMuteVideo
+	 * @type Function
+	 */
+	this.onMuteVideo = null;
 
 	// not found in Twilio docs, but adding to be inline with our mobile SDKs
 	/**
@@ -373,6 +391,92 @@ Connection.prototype.disconnect = function(callback)
 			this.device.sounds.audioCalling.pause();
 		}
 
+	}
+}
+
+/**
+ * This function has a dual purpose: a. if invoked with a single function
+ * argument it registers a callback to be notified when the connection's audio is
+ * muted/unmuted, and b. if invoked with a boolean argument it mutes/unmutes Connection's audio 
+ * @param {Varies} arg1 - Callback to be invoked in (a), boolean mute flag in (b)
+ */
+Connection.prototype.mute = function(arg1)
+{
+	if (typeof arg1 == "function") {
+		// we are passed a callback, need to keep the listener for later use
+		var callback = arg1;
+		if (this.device.debugEnabled) {
+			console.log("Connection: assign mute callback");
+		}
+
+		this.onMute = callback;
+	}
+	else {
+		// we are passed boolean argument, mute/unmute
+		var muted = arg1;
+		if (this.device.debugEnabled) {
+			console.log("Connection::mute(): " + muted);
+		}
+
+		if (this.webrtcommCall) {
+			if (muted) {
+				this.webrtcommCall.muteLocalAudioMediaStream();
+			}
+			else {
+				this.webrtcommCall.unmuteLocalAudioMediaStream();
+			}
+
+			this.muted = muted;
+
+			// Notify asynchronously of the mute action
+			var that = this;
+			setTimeout(function() {
+				 that.onMute(muted, that);
+			}, 1);
+		}
+	}
+}
+
+/**
+ * This function has a dual purpose: a. if invoked with a single function
+ * argument it registers a callback to be notified when the connection's video is
+ * muted/unmuted, and b. if invoked with a boolean argument it mutes/unmutes Connection's video 
+ * @param {Varies} arg1 - Callback to be invoked in (a), boolean mute flag in (b)
+ */
+Connection.prototype.muteVideo = function(arg1)
+{
+	if (typeof arg1 == "function") {
+		// we are passed a callback, need to keep the listener for later use
+		var callback = arg1;
+		if (this.device.debugEnabled) {
+			console.log("Connection: assign mute callback");
+		}
+
+		this.onMuteVideo = callback;
+	}
+	else {
+		// we are passed boolean argument, mute/unmute
+		var muted = arg1;
+		if (this.device.debugEnabled) {
+			console.log("Connection::muteVideo(): " + muted);
+		}
+
+		if (this.webrtcommCall) {
+			if (muted) {
+				this.webrtcommCall.hideLocalVideoMediaStream();
+			}
+			else {
+				this.webrtcommCall.showLocalVideoMediaStream();
+			}
+
+			this.videoMuted = muted;
+
+			// Notify asynchronously of the mute action
+			var that = this;
+			setTimeout(function() {
+				 that.onMuteVideo(muted, that);
+			}, 1);
+		}
 	}
 }
 
