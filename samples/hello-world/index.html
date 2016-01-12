@@ -30,6 +30,8 @@
     <button id="sendDigitsButton">Send DTMF 1</button>
     <button id="destroyButton">Destroy</button>
     <button id="muteIncomingButton">Mute Incoming</button>
+    <button id="ignoreIncomingButton">Ignore Incoming</button>
+    <button id="rejectIncomingButton">Reject Incoming</button>
     <div id="log">Loading RestComm client...</div>
   </div>
 
@@ -47,6 +49,8 @@ var sendButton = document.getElementById("sendButton");
 var sendDigitsButton = document.getElementById("sendDigitsButton");
 var destroyButton = document.getElementById("destroyButton");
 var muteIncomingButton = document.getElementById("muteIncomingButton");
+var ignoreIncomingButton = document.getElementById("ignoreIncomingButton");
+var rejectIncomingButton = document.getElementById("rejectIncomingButton");
 
 callButton.onclick = call;
 acceptButton.onclick = accept;
@@ -55,6 +59,8 @@ hangupButton.onclick = hangup;
 sendDigitsButton.onclick = sendDigits;
 destroyButton.onclick = destroy;
 muteIncomingButton.onclick = muteIncoming;
+ignoreIncomingButton.onclick = ignoreIncoming;
+rejectIncomingButton.onclick = rejectIncoming;
 
 var currentConnection;
 var parameters = {
@@ -87,6 +93,10 @@ RestCommClient.Device.connect(function(connection) {
 RestCommClient.Device.incoming(function(connection) {
 	$("#log").text("Incoming call from " + connection.parameters.From);
 	currentConnection = connection;
+	currentConnection.disconnect(function(connection) {
+		$("#log").text("Connection ended");
+		remoteMedia.style.display = "none";
+	});
 });
 
 RestCommClient.Device.cancel(function(connection) {
@@ -153,6 +163,14 @@ function destroy() {
 
 function muteIncoming() {
 	RestCommClient.Device.sounds.incoming(false);
+}
+
+function ignoreIncoming() {
+	RestCommClient.Device.activeConnection().ignore();
+}
+
+function rejectIncoming() {
+	RestCommClient.Device.activeConnection().reject();
 }
 
 </script>

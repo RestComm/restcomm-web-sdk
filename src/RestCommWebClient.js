@@ -79,11 +79,11 @@ WrtcEventListener.prototype.onWebRTCommCallRingingEvent = function(webRTCommCall
 		this.device.connection.isIncoming = true;
 		this.device.connection.parameters = {
 			'From': webRTCommCall.callerPhoneNumber, 
-			'To': '', 
+			'To': wrtcConfiguration.sip.sipUserName, 
 		};
 
 		this.device.connection.webrtcommCall = webRTCommCall;
-		this.device.connection.onDisconnect = this.device.onDisconnect;
+		//this.device.connection.onDisconnect = this.device.onDisconnect;
 		this.device.onIncoming(this.device.connection);
 		if (this.device.sounds.incomingEnabled) {
 			this.device.sounds.audioRinging.play();
@@ -261,6 +261,7 @@ function Connection(device, status)
 	 * @type Function
 	 */
 	this.onDisconnect = null;
+
 	// not found in Twilio docs, but adding to be inline with our mobile SDKs
 	/**
 	 * Is the Connection incoming or outgoing
@@ -268,6 +269,12 @@ function Connection(device, status)
 	 * @type Function
 	 */
 	this.isIncoming = false;
+	/**
+	 * Parameters of this Connection
+	 * @name Connection#parameters
+	 * @type Function
+	 */
+	this.parameters = null;
 	/**
 	 * The underlying webrtc call structure, not to be exposed to the App
 	 * @name Connection#webrtcommCall
@@ -367,6 +374,38 @@ Connection.prototype.disconnect = function(callback)
 		}
 
 	}
+}
+
+/**
+ * Reject a pending (ringing) incoming connection
+ * @function Device#reject
+ */
+Connection.prototype.reject = function() {
+	this.device.sounds.audioRinging.pause();
+	this.webrtcommCall.reject();
+	this.status = 'closed';
+} 
+
+/**
+ * Ignore a pending (ringing) incoming connection. The connection is closed but no answer is sent to the caller
+ * @function Device#ignore
+ */
+Connection.prototype.ignore = function() {
+	this.device.sounds.audioRinging.pause();
+	this.webrtcommCall.ignore();
+	this.status = 'closed';
+} 
+
+/**
+ * Return the status of the connection
+ * @function Device#status
+ */
+Connection.prototype.status = function() {
+	return this.status;	
+} 
+
+Connection.prototype.parameters = function() {
+	return this.parameters;
 }
 
 /**
@@ -717,7 +756,10 @@ var RestCommClient = {
 				var audioConstraints = arg2;
 
 				this.connection = new Connection(this, 'connecting');
-
+				this.connection.parameters = {
+					'From': wrtcConfiguration.sip.sipUserName, 
+					'To': parameters['username'], 
+				};
 				var callConfiguration = {
 							 displayName: wrtcConfiguration.sip.sipDisplayName,
 							 localMediaStream: localStream,
@@ -729,7 +771,7 @@ var RestCommClient = {
 				};
 
 				this.connection.webrtcommCall = wrtcClient.call(parameters['username'], callConfiguration);
-				this.connection.onDisconnect = this.onDisconnect;
+				//this.connection.onDisconnect = this.onDisconnect;
 				//inCall = true; 
 
 
