@@ -31,6 +31,7 @@ WrtcEventListener.prototype.onWebRTCommClientOpenedEvent = function()
 	   console.log("WrtcEventListener::onWebRTCommClientOpenedEvent");
 	}
 
+	this.device.status = 'ready';
 	this.device.onReady(this.device);
 };
 
@@ -88,6 +89,8 @@ WrtcEventListener.prototype.onWebRTCommCallRingingEvent = function(webRTCommCall
 		if (this.device.sounds.incomingEnabled) {
 			this.device.sounds.audioRinging.play();
 		}
+
+		this.device.status = 'busy';
 	}
 };
 
@@ -130,7 +133,8 @@ WrtcEventListener.prototype.onWebRTCommCallClosedEvent = function(webRTCommCall)
 		console.log("WrtcEventListener::onWebRTCommCallClosedEvent");
 	}
 
-	// update connection status and notify Connection and Device listener (notice that both Device and Connection define listeners for disconnect event)
+	// update device & connection status and notify Connection and Device listener (notice that both Device and Connection define listeners for disconnect event)
+	this.device.status = 'ready';
 	this.device.connection.status = 'closed';
 	this.device.connection.onDisconnect(this.device.connection);
 	this.device.onDisconnect(this.device.connection);
@@ -488,6 +492,7 @@ Connection.prototype.reject = function() {
 	this.device.sounds.audioRinging.pause();
 	this.webrtcommCall.reject();
 	this.status = 'closed';
+	this.device.status = 'ready';
 } 
 
 /**
@@ -498,6 +503,7 @@ Connection.prototype.ignore = function() {
 	this.device.sounds.audioRinging.pause();
 	this.webrtcommCall.ignore();
 	this.status = 'closed';
+	this.device.status = 'ready';
 } 
 
 /**
@@ -580,6 +586,12 @@ var RestCommClient = {
 		 */
 		onPresence: null,
 
+		/**
+		 * Status of the Device. Possible values are: <b>ready</b>, <b>offline</b>, <b>busy</b>. When 'ready' a Device is connected to RestComm and able to receive and make Connections. When 'offline' the Device is not connected to RestComm. When 'busy' the Device is connected to RestComm but already has an active Connection and hence cannot make or receive calls.
+		 * @name Device#status
+		 * @type String
+		 */
+		status: 'offline',
 		/**
 		 * Current Connection belonging to Device
 		 * @name Device#connection
@@ -876,8 +888,8 @@ var RestCommClient = {
 
 				this.connection.webrtcommCall = wrtcClient.call(parameters['username'], callConfiguration);
 				//this.connection.onDisconnect = this.onDisconnect;
-				//inCall = true; 
 
+				this.status = 'busy';
 
 				if (localStream.getVideoTracks().length > 0) {
 					if (this.debugEnabled) {
@@ -943,6 +955,18 @@ var RestCommClient = {
 		},
 
 		/**
+		 * Return the status of the Device
+		 * @function Device#status
+		 */
+		status: function() {
+			if (this.debugEnabled) {
+				console.log("Device::status()");
+			}
+
+			return this.status;
+		},
+
+		/**
 		 * Return the active Connection
 		 * @function Device#activeConnection
 		 */
@@ -964,6 +988,7 @@ var RestCommClient = {
 			}
 
 			wrtcClient.close();
+			this.status = 'offline';
 		}
 	}
 }
