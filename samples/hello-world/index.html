@@ -28,6 +28,8 @@
     <button id="hangupButton">Hang Up</button>
     <button id="sendButton">Send</button>
     <button id="sendDigitsButton">Send DTMF 1</button>
+    <button id="destroyButton">Destroy</button>
+    <button id="muteIncomingButton">Mute Incoming</button>
     <div id="log">Loading RestComm client...</div>
   </div>
 
@@ -43,17 +45,24 @@ var acceptButton = document.getElementById("acceptButton");
 var hangupButton = document.getElementById("hangupButton");
 var sendButton = document.getElementById("sendButton");
 var sendDigitsButton = document.getElementById("sendDigitsButton");
+var destroyButton = document.getElementById("destroyButton");
+var muteIncomingButton = document.getElementById("muteIncomingButton");
 
 callButton.onclick = call;
 acceptButton.onclick = accept;
 sendButton.onclick = send;
 hangupButton.onclick = hangup;
 sendDigitsButton.onclick = sendDigits;
+destroyButton.onclick = destroy;
+muteIncomingButton.onclick = muteIncoming;
 
 var currentConnection;
 var parameters = {
 	'debug': true,
-	'username': 'web-sdk',
+	'registrar': 'wss://cloud.restcomm.com:5063',
+	'domain': 'cloud.restcomm.com',
+	//'username': 'web-sdk',
+	'username': 'antonis',
 	'password': '1234',
 	'local-media': localMedia,
 	'remote-media': remoteMedia,
@@ -80,6 +89,14 @@ RestCommClient.Device.incoming(function(connection) {
 	currentConnection = connection;
 });
 
+RestCommClient.Device.cancel(function(connection) {
+	$("#log").text("Incoming call is canceled");
+});
+
+RestCommClient.Device.offline(function(device) {
+	$("#log").text("Device is offline");
+});
+
 RestCommClient.Device.message(function(parameters) {
 	$("#log").text("Incoming message from: " + parameters.From + ": " + parameters.Text);
 });
@@ -89,7 +106,8 @@ RestCommClient.Device.disconnect(function(connection) {
 
 function call() {
 	var parameters = {
-		'username': '+1236@staging.restcomm.com',
+		//'username': '+1236@cloud.restcomm.com',
+		'username': 'orestis@cloud.restcomm.com',
 		'video-enabled': useVideo,
 	};
 	currentConnection = RestCommClient.Device.connect(parameters);
@@ -97,6 +115,10 @@ function call() {
 	currentConnection.disconnect(function(connection) {
 		$("#log").text("Connection ended");
 		remoteMedia.style.display = "none";
+	});
+
+	currentConnection.error(function(error) {
+		$("#log").text("Connection error: " + error);
 	});
 }
 
@@ -109,7 +131,7 @@ function accept() {
 
 function send() {
 	var parameters = {
-		'username': 'orestis@staging.restcomm.com',
+		'username': 'orestis@cloud.restcomm.com',
 		'message': 'Hello there!',
 	};
 	RestCommClient.Device.sendMessage(parameters);
@@ -123,6 +145,14 @@ function hangup() {
 	RestCommClient.Device.disconnectAll();
 		$("#log").text("Connection ended");
 		remoteMedia.style.display = "none";
+}
+
+function destroy() {
+	RestCommClient.Device.destroy();
+}
+
+function muteIncoming() {
+	RestCommClient.Device.sounds.incoming(false);
 }
 
 </script>
