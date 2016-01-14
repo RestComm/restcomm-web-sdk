@@ -20,8 +20,8 @@
 </head>
 <body>
 	<!-- html elements for local and remote media (audio and video if applicable -->
-	<video id="localMedia" autoplay muted></video>
-	<video id="remoteMedia" autoplay></video>
+	<video id="localMedia" autoplay muted style="display: none;"></video>
+	<video id="remoteMedia" autoplay style="display: none;"></video>
 
 	<div>
 		<button id="callButton">Call</button>
@@ -30,10 +30,8 @@
 	</div>
 
 	<script>
-		var useVideo = false;
 		var localMedia = document.getElementById("localMedia");
 		var remoteMedia = document.getElementById("remoteMedia");
-		remoteMedia.style.display = "none";
 		var callButton = document.getElementById("callButton");
 		var hangupButton = document.getElementById("hangupButton");
 		var currentConnection;
@@ -45,9 +43,6 @@
 			'debug': true,
 			'username': 'web-sdk',
 			'password': '1234',
-			'local-media': localMedia,
-			'remote-media': remoteMedia,
-			'video-enabled': useVideo,
 		};
 
 		// In order to use RestCommWebClient you first to setup the Device with parameters set above
@@ -66,14 +61,15 @@
 		// Pass a callback to get notified when a connection is established successfuly
 		RestCommClient.Device.connect(function(connection) {
 			$("#log").text("Successfully established call");
-			remoteMedia.style.display = "block";
 		});
 
 		// When user presses Dial, this function is called that makes the actuall call
 		function call() {
 			var parameters = {
-				'username': '+1236@cloud.restcomm.com',  // CHANGEME: update the IP address to your Restcomm instance 
-				'video-enabled': useVideo,  // should we use WebRTC video or WebRTC audio only?
+				'username': '+1235@cloud.restcomm.com',  // CHANGEME: update the IP address to your Restcomm instance 
+				'video-enabled': false,  // should we use WebRTC video or WebRTC audio only?
+				'local-media': localMedia,
+				'remote-media': remoteMedia,
 			};
 
 			// Make the actual call, using the parameters above
@@ -82,7 +78,6 @@
 			// Pass a callback to get notified when the connection is disconnected
 			currentConnection.disconnect(function(connection) {
 				$("#log").text("Connection ended");
-				remoteMedia.style.display = "none";
 			});
 
 			// Pass a callback to get notified if a Connetion error occurs
