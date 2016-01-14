@@ -8,7 +8,7 @@ RestComm WebRTC SDK allows you to create Real Time Video, Voice and Instant Mess
 
 Documentation
 ========
-Check the Documentation at http://mobicents.github.io/restcomm-web-sdk/doc
+Check the Documentation at http://restcomm.github.io/restcomm-web-sdk/doc
 
 Want to Contribute ? 
 ========
