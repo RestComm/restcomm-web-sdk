@@ -6,10 +6,47 @@ var remoteMedia;
 var username;
 var inCall = false;
 
-/*
-$.getScript("js/WebRTComm.js", function() {
-   alert("Script loaded but not necessarily executed.");
+// Trying to hide the .js dependencies from index.html. Here are some alternatives, but none of them worked 100% correctly for me. Let's keep them around in case we revisit in the future:
+/* This is supposed to be jquery's way to include .js from here, but I had to change the order or <script> tags in index.html, which ruins the whole site for some reason
+$.getScript("scripts/adapter.js", function() {
+	console.log("Loaded adapter.js");
 });
+$.getScript("scripts/jain-sip.js", function() {
+	console.log("Loaded jain-sip.js");
+});
+$.getScript("scripts/WebRTComm.js", function() {
+	console.log("Loaded WebRTComm.js");
+});
+*/
+
+/* Another way is adding requirejs as a dependency and use this (which again seems to be failing some times (arounds 1/10)
+requirejs(["adapter"], function(adapter) {
+	console.log("-- Loaded adapter.js");
+});
+requirejs(["jain-sip"], function(jainSip) {
+	console.log("-- Loaded jain-sip.js");
+});
+requirejs(["WebRTComm"], function(webRTComm) {
+	console.log("-- Loaded WebRTComm.js");
+});
+*/
+
+/* Yet another way that again doesn't work 100% of the times, but we avoid a third party library dependency (have only tested with Chrom though)
+// Helper to include .js files from a .js file instead of html
+function include(file)
+{
+  var script  = document.createElement('script');
+  script.src  = file;
+  script.type = 'text/javascript';
+  script.defer = true;
+
+  document.getElementsByTagName('head').item(0).appendChild(script);
+}
+
+// Include prerequisites
+include('scripts/adapter.js');
+include('scripts/jain-sip.js');
+include('scripts/WebRTComm.js');
 */
 
 // --- WrtcEventListener callbacks
@@ -137,7 +174,9 @@ WrtcEventListener.prototype.onWebRTCommCallClosedEvent = function(webRTCommCall)
 	this.device.status = 'ready';
 	this.device.connection.status = 'closed';
 	this.device.connection.onDisconnect(this.device.connection);
-	this.device.onDisconnect(this.device.connection);
+	if (this.device.onDisconnect != null) {
+		this.device.onDisconnect(this.device.connection);
+	}
 };
 
 WrtcEventListener.prototype.onWebRTCommCallOpenedEvent = function(webRTCommCall) 
@@ -604,9 +643,9 @@ var RestCommClient = {
 
 		sounds: {
 			// sound files to be used for various events
-			soundRinging: 'js/sounds/ringing.mp3',
-			soundCalling: 'js/sounds/calling.mp3',
-			soundMessage: 'js/sounds/message.mp3',
+			soundRinging: 'scripts/sounds/ringing.mp3',
+			soundCalling: 'scripts/sounds/calling.mp3',
+			soundMessage: 'scripts/sounds/message.mp3',
 
 			// audio objects to handle sound playback
 			audioRinging: null,

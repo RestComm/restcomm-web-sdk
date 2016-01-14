@@ -2,211 +2,101 @@
 <html>
 
 <head>
-<meta name="keywords" content="JavaScript, WebRTC" />
-<meta name="description" content="RestComm WebRTC SDK" />
-<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1">
+	<meta name="keywords" content="JavaScript, WebRTC" />
+	<meta name="description" content="RestComm WebRTC SDK" />
+	<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1">
 
-<title>RestComm Hello World</title>
+	<title>Restcomm Web SDK Hello World</title>
 
-<style>
-</style>
-	 <!-- Need to hide those 3 dependencies -->
-    <script type="text/javascript" src='js/adapter.js'></script>
-    <script type="text/javascript" src='js/jain-sip.js'></script>
-    <script type="text/javascript" src='js/WebRTComm.js'></script>
-    <script type="text/javascript" src='js/RestCommWebClient.js'></script>
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js">
-    </script>
+	<!-- Include adapter.js to handle WebRTC differences between browsers -->
+	<script type="text/javascript" src='scripts/adapter.js'></script>
+	<!-- Include the JAIN SIP lib -->
+	<script type="text/javascript" src='scripts/jain-sip.js'></script>
+	<!-- Include the low level WebRTComm lib that sits on top of JAIN SIP and provides WebRTC media and SIP signaling facilities  -->
+	<script type="text/javascript" src='scripts/WebRTComm.js'></script>
+	<!-- Include the high level Restcomm Web library that sits on top of WebRTComm.js and provides an easy to use, a Twilio compatible API -->
+	<script type="text/javascript" src='scripts/RestCommWebClient.js'></script>
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 </head>
 <body>
-  <video id="localMedia" autoplay muted></video>
-  <video id="remoteMedia" autoplay></video>
+	<!-- html elements for local and remote media (audio and video if applicable -->
+	<video id="localMedia" autoplay muted></video>
+	<video id="remoteMedia" autoplay></video>
 
-  <div>
-    <button id="callButton">Call</button>
-    <button id="acceptButton">Accept</button>
-    <button id="hangupButton">Hang Up</button>
-    <button id="sendButton">Send</button>
-    <button id="sendDigitsButton">Send DTMF 1</button>
-    <button id="destroyButton">Destroy</button>
-    <button id="muteIncomingButton">Mute Incoming</button>
-    <button id="ignoreIncomingButton">Ignore Incoming</button>
-    <button id="rejectIncomingButton">Reject Incoming</button>
-    <button id="muteAudioButton">Mute Audio</button>
-    <button id="unmuteAudioButton">Unmute Audio</button>
-    <button id="muteVideoButton">Mute Video</button>
-    <button id="unmuteVideoButton">Unmute Video</button>
-    <div id="log">Loading RestComm client...</div>
-  </div>
+	<div>
+		<button id="callButton">Call</button>
+		<button id="hangupButton">Hang Up</button>
+		<div id="log">Loading RestComm client...</div>
+	</div>
 
-<script>
-
-var useVideo = true;
-
-var localMedia = document.getElementById("localMedia");
-var remoteMedia = document.getElementById("remoteMedia");
-remoteMedia.style.display = "none";
-var callButton = document.getElementById("callButton");
-var acceptButton = document.getElementById("acceptButton");
-var hangupButton = document.getElementById("hangupButton");
-var sendButton = document.getElementById("sendButton");
-var sendDigitsButton = document.getElementById("sendDigitsButton");
-var destroyButton = document.getElementById("destroyButton");
-var muteIncomingButton = document.getElementById("muteIncomingButton");
-var ignoreIncomingButton = document.getElementById("ignoreIncomingButton");
-var rejectIncomingButton = document.getElementById("rejectIncomingButton");
-var muteAudioButton = document.getElementById("muteAudioButton");
-var unmuteAudioButton = document.getElementById("unmuteAudioButton");
-var muteVideoButton = document.getElementById("muteVideoButton");
-var unmuteVideoButton = document.getElementById("unmuteVideoButton");
-
-callButton.onclick = call;
-acceptButton.onclick = accept;
-sendButton.onclick = send;
-hangupButton.onclick = hangup;
-sendDigitsButton.onclick = sendDigits;
-destroyButton.onclick = destroy;
-muteIncomingButton.onclick = muteIncoming;
-ignoreIncomingButton.onclick = ignoreIncoming;
-rejectIncomingButton.onclick = rejectIncoming;
-muteAudioButton.onclick = muteAudio;
-unmuteAudioButton.onclick = unmuteAudio;
-muteVideoButton.onclick = muteVideo;
-unmuteVideoButton.onclick = unmuteVideo;
-
-var currentConnection;
-var parameters = {
-	'debug': true,
-	'registrar': 'wss://cloud.restcomm.com:5063',
-	'domain': 'cloud.restcomm.com',
-	//'username': 'web-sdk',
-	'username': 'antonis',
-	'password': '1234',
-	'local-media': localMedia,
-	'remote-media': remoteMedia,
-	'video-enabled': useVideo,
-};
-
-RestCommClient.Device.setup(parameters);
-
-RestCommClient.Device.ready(function(device) {
-	$("#log").text("Ready");
-});
-
-RestCommClient.Device.error(function(error) {
-	$("#log").text("Error: " + error.message);
-});
-
-RestCommClient.Device.connect(function(connection) {
-	$("#log").text("Successfully established call");
-	remoteMedia.style.display = "block";
-});
-
-RestCommClient.Device.incoming(function(connection) {
-	$("#log").text("Incoming call from " + connection.parameters.From);
-	currentConnection = connection;
-	currentConnection.disconnect(function(connection) {
-		$("#log").text("Connection ended");
+	<script>
+		var useVideo = false;
+		var localMedia = document.getElementById("localMedia");
+		var remoteMedia = document.getElementById("remoteMedia");
 		remoteMedia.style.display = "none";
-	});
-});
+		var callButton = document.getElementById("callButton");
+		var hangupButton = document.getElementById("hangupButton");
+		var currentConnection;
 
-RestCommClient.Device.cancel(function(connection) {
-	$("#log").text("Incoming call is canceled");
-});
+		callButton.onclick = call;
+		hangupButton.onclick = hangup;
 
-RestCommClient.Device.offline(function(device) {
-	$("#log").text("Device is offline");
-});
+		var parameters = {
+			'debug': true,
+			'username': 'web-sdk',
+			'password': '1234',
+			'local-media': localMedia,
+			'remote-media': remoteMedia,
+			'video-enabled': useVideo,
+		};
 
-RestCommClient.Device.message(function(parameters) {
-	$("#log").text("Incoming message from: " + parameters.From + ": " + parameters.Text);
-});
+		// In order to use RestCommWebClient you first to setup the Device with parameters set above
+		RestCommClient.Device.setup(parameters);
 
-RestCommClient.Device.disconnect(function(connection) {
-});
+		// Pass a callback to get notified when RestCommWebClient is ready
+		RestCommClient.Device.ready(function(device) {
+			$("#log").text("Ready");
+		});
 
-function call() {
-	var parameters = {
-		//'username': '+1236@cloud.restcomm.com',
-		'username': 'orestis@cloud.restcomm.com',
-		'video-enabled': useVideo,
-	};
-	currentConnection = RestCommClient.Device.connect(parameters);
+		// Pass a callback to get notified if a Device error occurs
+		RestCommClient.Device.error(function(error) {
+			$("#log").text("Error: " + error.message);
+		});
 
-	currentConnection.disconnect(function(connection) {
-		$("#log").text("Connection ended");
-		remoteMedia.style.display = "none";
-	});
+		// Pass a callback to get notified when a connection is established successfuly
+		RestCommClient.Device.connect(function(connection) {
+			$("#log").text("Successfully established call");
+			remoteMedia.style.display = "block";
+		});
 
-	currentConnection.error(function(error) {
-		$("#log").text("Connection error: " + error);
-	});
+		// When user presses Dial, this function is called that makes the actuall call
+		function call() {
+			var parameters = {
+				'username': '+1236@cloud.restcomm.com',  // CHANGEME: update the IP address to your Restcomm instance 
+				'video-enabled': useVideo,  // should we use WebRTC video or WebRTC audio only?
+			};
 
-	currentConnection.mute(function(muted, connection) {
-		$("#log").text("Connection audio muted: " + muted);
-	});
-	currentConnection.muteVideo(function(muted, connection) {
-		$("#log").text("Connection video muted: " + muted);
-	});
-}
+			// Make the actual call, using the parameters above
+			currentConnection = RestCommClient.Device.connect(parameters);
 
-function accept() {
-	var parameters = {
-		'video-enabled': useVideo,
-	};
-	currentConnection.accept(parameters);
-}
+			// Pass a callback to get notified when the connection is disconnected
+			currentConnection.disconnect(function(connection) {
+				$("#log").text("Connection ended");
+				remoteMedia.style.display = "none";
+			});
 
-function send() {
-	var parameters = {
-		'username': 'orestis@cloud.restcomm.com',
-		'message': 'Hello there!',
-	};
-	RestCommClient.Device.sendMessage(parameters);
-}
+			// Pass a callback to get notified if a Connetion error occurs
+			currentConnection.error(function(error) {
+				$("#log").text("Connection error: " + error);
+			});
+		}
 
-function sendDigits() {
-	currentConnection.sendDigits('1*');
-}
+		// When user presses Hangup, this function is called that makes the actuall call
+		function hangup() {
+			RestCommClient.Device.disconnectAll();
+		}
 
-function hangup() {
-	RestCommClient.Device.disconnectAll();
-		$("#log").text("Connection ended");
-		remoteMedia.style.display = "none";
-}
-
-function destroy() {
-	RestCommClient.Device.destroy();
-}
-
-function muteIncoming() {
-	RestCommClient.Device.sounds.incoming(false);
-}
-
-function ignoreIncoming() {
-	RestCommClient.Device.activeConnection().ignore();
-}
-
-function rejectIncoming() {
-	RestCommClient.Device.activeConnection().reject();
-}
-
-function muteAudio() {
-	RestCommClient.Device.activeConnection().mute(true);
-}
-
-function unmuteAudio() {
-	RestCommClient.Device.activeConnection().mute(false);
-}
-function muteVideo() {
-	RestCommClient.Device.activeConnection().muteVideo(true);
-}
-
-function unmuteVideo() {
-	RestCommClient.Device.activeConnection().muteVideo(false);
-}
-</script>
+		</script>
 
 </body>
 </html>
