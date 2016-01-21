@@ -35,7 +35,7 @@
 
 <p>When an outgoing connection is created with Device.connect(parameters) it starts with state 'pending'. Once it starts ringing on the remote party it transitions to 'connecting'. When the remote party answers it, the Connection state transitions to 'open'.</p>
 
-<p>Once an Connection (either incoming or outgoing) is established (i.e. 'open') media can start flowing over it. DTMF digits can be sent over to the remote party using Connection.sendDigits(digits). When done with the Connection you can disconnect it with <a href="Connection.html#disconnect">Connection.disconnect()</a>.</p></div>
+<p>Once an Connection (either incoming or outgoing) is established (i.e. 'open') media can start flowing over it. DTMF digits can be sent over to the remote party using <a href="Connection.html#sendDigits">Connection.sendDigits(digits)</a>. When done with the Connection you can disconnect it with <a href="Connection.html#disconnect">Connection.disconnect()</a>.</p></div>
         
     
 </header>
@@ -145,7 +145,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line141">line 141</a>
+        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line285">line 285</a>
     </li></ul></dd>
     
 
@@ -243,7 +243,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line174">line 174</a>
+        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line346">line 346</a>
     </li></ul></dd>
     
 
@@ -267,7 +267,7 @@
 
 
 <div class="description">
-    Whether Connection is muted or not
+    Whether Connection's audio is muted or not
 </div>
 
 
@@ -315,7 +315,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line161">line 161</a>
+        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line308">line 308</a>
     </li></ul></dd>
     
 
@@ -387,7 +387,295 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line167">line 167</a>
+        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line326">line 326</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="onError"><span class="type-signature"></span>onError<span class="type-signature"> :function</span></h4>
+
+
+
+
+<div class="description">
+    Callback for when there is a Connection error
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">function</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line320">line 320</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="onMute"><span class="type-signature"></span>onMute<span class="type-signature"> :function</span></h4>
+
+
+
+
+<div class="description">
+    Callback for when Connection's audio is muted/unmuted
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">function</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line332">line 332</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="onMuteVideo"><span class="type-signature"></span>onMuteVideo<span class="type-signature"> :function</span></h4>
+
+
+
+
+<div class="description">
+    Callback for when Connection's video is muted/unmuted
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">function</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line338">line 338</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="parameters"><span class="type-signature"></span>parameters<span class="type-signature"> :function</span></h4>
+
+
+
+
+<div class="description">
+    Parameters of this Connection
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">function</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line352">line 352</a>
     </li></ul></dd>
     
 
@@ -459,7 +747,79 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line155">line 155</a>
+        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line302">line 302</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="videoMuted"><span class="type-signature"></span>videoMuted<span class="type-signature"> :Boolean</span></h4>
+
+
+
+
+<div class="description">
+    Whether Connection's video is muted or not
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Boolean</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line314">line 314</a>
     </li></ul></dd>
     
 
@@ -587,7 +947,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line194">line 194</a>
+        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line372">line 372</a>
     </li></ul></dd>
     
 
@@ -720,7 +1080,535 @@ disconnected, and b. if invoked with no arguments it disconnects the connection
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line216">line 216</a>
+        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line432">line 432</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="error"><span class="type-signature"></span>error<span class="signature">(callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    Register callback to be notified when there is a Connection error
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Callback to be invoked</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line416">line 416</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="mute"><span class="type-signature"></span>mute<span class="signature">(arg1)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    This function has a dual purpose: a. if invoked with a single function
+argument it registers a callback to be notified when the connection's audio is
+muted/unmuted, and b. if invoked with a boolean argument it mutes/unmutes Connection's audio
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>arg1</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Varies</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Callback to be invoked in (a), boolean mute flag in (b)</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line467">line 467</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="muteVideo"><span class="type-signature"></span>muteVideo<span class="signature">(arg1)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    This function has a dual purpose: a. if invoked with a single function
+argument it registers a callback to be notified when the connection's video is
+muted/unmuted, and b. if invoked with a boolean argument it mutes/unmutes Connection's video
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>arg1</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Varies</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Callback to be invoked in (a), boolean mute flag in (b)</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line510">line 510</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="sendDigits"><span class="type-signature"></span>sendDigits<span class="signature">(digits)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    Sends DTMF digits over this Connection
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>digits</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">DTMF digits to send across the Connection</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="RestCommWebClient.js.html">RestCommWebClient.js</a>, <a href="RestCommWebClient.js.html#line400">line 400</a>
     </li></ul></dd>
     
 
@@ -768,7 +1656,7 @@ disconnected, and b. if invoked with no arguments it disconnects the connection
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Jan 05 2016 16:53:10 GMT+0200 (EET)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Jan 21 2016 05:21:30 GMT+0200 (EET)
 </footer>
 
 <script> prettyPrint(); </script>
