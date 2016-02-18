@@ -36,7 +36,7 @@
 	</div>
 
 	<script>
-		var useVideo = false;
+		var useVideo = true;
 		var localMedia = document.getElementById("localMedia");
 		var remoteMedia = document.getElementById("remoteMedia");
 		remoteMedia.style.display = "none";
@@ -76,9 +76,6 @@
 			//'username': 'web-sdk',
 			'username': 'antonis',
 			'password': '1234',
-			'local-media': localMedia,
-			'remote-media': remoteMedia,
-			'video-enabled': useVideo,
 		};
 
 		RestCommClient.Device.setup(parameters);
@@ -125,6 +122,8 @@
 				'username': '+1236@cloud.restcomm.com',  // CHANGEME: update the IP address to your Restcomm instance 
 				//'username': 'orestis@cloud.restcomm.com',
 				'video-enabled': useVideo,
+				'local-media': localMedia,
+				'remote-media': remoteMedia,
 			};
 			currentConnection = RestCommClient.Device.connect(parameters);
 
