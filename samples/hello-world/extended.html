@@ -15,8 +15,8 @@
 	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 </head>
 <body>
-	<video id="localMedia" autoplay muted></video>
-	<video id="remoteMedia" autoplay></video>
+	<video id="localMedia" autoplay muted style="display: none;"></video>
+	<video id="remoteMedia" autoplay style="display: none;"></video>
 
 	<div>
 		<button id="callButton">Call</button>
@@ -71,11 +71,10 @@
 		var currentConnection;
 		var parameters = {
 			'debug': true,
-			'registrar': 'wss://cloud.restcomm.com:5063',
-			'domain': 'cloud.restcomm.com',
-			//'username': 'web-sdk',
 			'username': 'antonis',
 			'password': '1234',
+			//'registrar': 'wss://cloud.restcomm.com:5063',
+			//'domain': 'cloud.restcomm.com',
 		};
 
 		RestCommClient.Device.setup(parameters);
@@ -120,8 +119,7 @@
 		function call() {
 			var parameters = {
 				'username': '+1236@cloud.restcomm.com',  // CHANGEME: update the IP address to your Restcomm instance 
-				//'username': 'orestis@cloud.restcomm.com',
-				'video-enabled': useVideo,
+				'video-enabled': false,
 				'local-media': localMedia,
 				'remote-media': remoteMedia,
 			};
