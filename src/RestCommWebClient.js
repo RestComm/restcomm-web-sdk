@@ -141,6 +141,12 @@ WrtcEventListener.prototype.onWebRTCommCallRingingEvent = function(webRTCommCall
 
 		this.device.connection.webrtcommCall = webRTCommCall;
 		//this.device.connection.onDisconnect = this.device.onDisconnect;
+		var that = this;
+/*
+		setTimeout(function() {
+				that.device.onIncoming(that.device.connection);
+				}, 1);
+*/
 		this.device.onIncoming(this.device.connection);
 		if (this.device.sounds.incomingEnabled) {
 			this.device.sounds.audioRinging.play();
@@ -367,7 +373,9 @@ function Connection(device, status)
 /**
  * Accept an incoming call
  * @param {dictionary} parameters - Parameters for the connection <br>
- * - <b>'videoEnabled'</b> : Should we enable video internally when calling WebRTC getUserMedia() (boolean) <br>
+ * <b>localMedia</b> : Local media stream, usually an HTML5 video or audio element <br>
+ * <b>remoteMedia</b> : Remote media stream, usually an HTML5 video or audio element <br>
+ * <b>videoEnabled</b> : Should we enable video internally when calling WebRTC getUserMedia() (boolean) <br>
  */
 Connection.prototype.accept = function(parameters)
 {
@@ -377,20 +385,53 @@ Connection.prototype.accept = function(parameters)
 
 	this.device.sounds.audioRinging.pause();
 
-	var callConfiguration = {
-		displayName: username,
-		localMediaStream: localStream,
-		audioMediaFlag: true,
-		videoMediaFlag: parameters['video-enabled'],
-		messageMediaFlag: false
-	};
-
+	remoteMedia = parameters['remote-media'];
 	this.parameters['video-enabled'] = parameters['video-enabled'];
 
-	if (this.webrtcommCall) {
-		this.webrtcommCall.accept(callConfiguration);
-		this.status = 'open';
-	}
+	var that = this;
+	// webrtc getUserMedia
+	getUserMedia({audio:true, video:parameters['video-enabled']}, 
+			function(stream) {
+				// got local stream as result of getUserMedia() -add it to localVideo html element
+				if (that.debugEnabled) {
+					console.log("Connection::accept(), received local WebRTC stream");
+				}
+				parameters['local-media'].src = URL.createObjectURL(stream);
+				localStream = stream;
+
+				var callConfiguration = {
+							 displayName: wrtcConfiguration.sip.sipDisplayName,
+							 localMediaStream: localStream,
+							 audioMediaFlag: true,
+							 videoMediaFlag: parameters['video-enabled'],
+							 messageMediaFlag: false,
+							 audioCodecsFilter: '',
+							 videoCodecsFilter: ''
+				};
+
+				if (that.webrtcommCall) {
+					that.webrtcommCall.accept(callConfiguration);
+					that.status = 'open';
+				}
+
+				if (localStream.getVideoTracks().length > 0) {
+					if (that.debugEnabled) {
+						console.log("Connection::accept(): Using video device: " + localStream.getVideoTracks()[0].label);
+					}
+				}
+				if (localStream.getAudioTracks().length > 0) {
+					if (that.debugEnabled) {
+						console.log("Connection::accept(): Using audio device: " + localStream.getAudioTracks()[0].label);
+					}
+				}
+			},
+			function(error) {
+				console.log("Device::setup(), getUserMedia error: ", error);
+
+				that.onError("Error in getUserMedia()" + error);
+			}
+	);
+
 }
 
 /**
@@ -925,7 +966,7 @@ var RestCommClient = {
 						function(stream) {
 							// got local stream as result of getUserMedia() -add it to localVideo html element
 							if (that.debugEnabled) {
-								console.log("Device::setup(), received local WebRTC stream");
+								console.log("Device::connect(), received local WebRTC stream");
 							}
 							parameters['local-media'].src = URL.createObjectURL(stream);
 							localStream = stream;
@@ -956,7 +997,7 @@ var RestCommClient = {
 							}
 						},
 						function(error) {
-							console.log("Device::setup(), getUserMedia error: ", error);
+							console.log("Device::connect(), getUserMedia error: ", error);
 
 							that.onError("Error in getUserMedia()" + error);
 						}

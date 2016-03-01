@@ -114,6 +114,9 @@
 				$("#log").text("Connection ended");
 				remoteMedia.style.display = "none";
 			});
+
+			// auto-accept an incoming call to be able to load-test.
+			accept();
 		});
 
 		RestCommClient.Device.cancel(function(connection) {
@@ -134,7 +137,7 @@
 		function call() {
 			var parameters = {
 				'username': '+1235@127.0.0.1',  // CHANGEME: update the IP address to your Restcomm instance 
-				'video-enabled': false,
+				'video-enabled': useVideo,
 				'local-media': localMedia,
 				'remote-media': remoteMedia,
 			};
@@ -160,6 +163,8 @@
 		function accept() {
 			var parameters = {
 				'video-enabled': useVideo,
+				'local-media': localMedia,
+				'remote-media': remoteMedia,
 			};
 			currentConnection.accept(parameters);
 		}
