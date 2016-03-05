@@ -36,7 +36,7 @@ if (process.argv[5]) {
 	HTTPS_PORT = process.argv[5];
 }
 
-console.log('[server.js] Initializing http(s) server with ' + CLIENT_COUNT + ' clients, listening for RCML (REST) at: ' + RCML_PORT + ', listening for http (Webrtc App) at: ' + HTTP_PORT + ', listening for https (Webrtc App) at: ' + HTTPS_PORT);	
+console.log('[server.js] Initializing http(s) server with ' + CLIENT_COUNT + ' clients: \n\tRCML (REST) port: ' + RCML_PORT + ' \n\thttp (Webrtc App) port: ' + HTTP_PORT + ' \n\thttps (Webrtc App) port: ' + HTTPS_PORT);	
 
 // Serve html pages over http
 var fileServer = new(nodeStatic.Server)();

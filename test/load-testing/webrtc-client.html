@@ -87,14 +87,22 @@
 		if (!password) {
 			password = '1234'
 		}
+		var registerWsUrl = getParameterByName('register-ws-url');
+		if (!registerWsUrl) {
+			registerWsUrl = 'ws://127.0.0.1:5082'
+		}
+		var registerDomain = getParameterByName('register-domain');
+		if (!registerDomain) {
+			registerDomain = '127.0.0.1'
+		}
 
 		var currentConnection;
 		var parameters = {
 			'debug': true,
 			'username': username,
 			'password': password,
-			'registrar': 'ws://127.0.0.1:5082',
-			'domain': '127.0.0.1',
+			'registrar': registerWsUrl,
+			'domain': registerDomain,
 		};
 
 		RestCommClient.Device.setup(parameters);

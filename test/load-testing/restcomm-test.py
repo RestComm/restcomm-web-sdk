@@ -153,6 +153,8 @@ def globalTeardown(dictionary):
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--client-count', dest = 'count', default = 10, type = int, help = 'Count of Webrtc clients spawned for the test')
 parser.add_argument('-u', '--client-url', dest = 'url', default = 'http://127.0.0.1:10510/webrtc-client.html', help = 'Webrtc clients target URL, like \'http://127.0.0.1:10510/webrtc-client.html\'')
+parser.add_argument('-w', '--client-register-ws-url', dest = 'registerWsUrl', default = 'ws://127.0.0.1:5082', help = 'Webrtc clients target websocket URL for registering, like \'ws://127.0.0.1:5082\'')
+parser.add_argument('-d', '--client-register-domain', dest = 'registerDomain', default = '127.0.0.1', help = 'Webrtc clients domain for registering, like \'127.0.0.1\'')
 #parser.add_argument('-e', '--external-service', dest = 'externalService', default = 'http://127.0.0.1:10512/rcml', help = 'External service for Restcomm to get RCML, like \'http://127.0.0.1:10512/rcml\'')
 parser.add_argument('-x', '--client-user-prefix', dest = 'userPrefix', default = 'user', help = 'User prefix for the clients, like \'user\'')
 parser.add_argument('-p', '--client-password', dest = 'password', default = '1234', help = 'Password for the clients, like \'1234\'')
@@ -160,6 +162,7 @@ parser.add_argument('-s', '--account-sid', dest = 'accountSid', required = True,
 parser.add_argument('-a', '--auth-token', dest = 'authToken', required = True, help = 'Restcomm auth token, like \'0a01c34aac72a432579fe08fc2461036\'')
 parser.add_argument('-r', '--http-protocol', dest = 'httpProtocol', default = 'http', help = 'Restcomm http protocol: \'http\' (default) or \'https\'')
 parser.add_argument('-t', '--transport', dest = 'transport', default = '127.0.0.1:8080', help = 'Restcomm transport, like \'127.0.0.1:8080\'')
+
 args = parser.parse_args()
 
 print TAG + 'Using Webrtc Client count: ' + str(args.count) + ', targeting URL: ' + args.url + ', using password: ' + args.password
@@ -168,7 +171,10 @@ print TAG + 'Using Restcomm instance at: ' + args.transport + ' over ' + args.ht
 # Populate a list with ids and URLs for each client thread that will be spawned
 urls = list()
 for i in range(1, args.count + 1):
-	urls.append({'id': i, 'url' : args.url + '?username=' + args.userPrefix + str(i) + '&password=' + args.password})
+	urls.append({ 
+		'id': i, 
+		'url' : args.url + '?username=' + args.userPrefix + str(i) + '&password=' + args.password + '&register-ws-url=' + args.registerWsUrl + '&register-domain=' + args.registerDomain,
+	})
 
 globalSetup({ 
 	'count': args.count, 
@@ -182,8 +188,7 @@ print TAG + 'Spawning ' + str(args.count) + ' tester threads'
 
 # Make the Pool of workers
 pool = ThreadPool(args.count) 
-# Open the urls in their own threads
-# and return the results
+# Open the urls in their own threads and return the results
 results = pool.map(threadFunction, urls)
 # close the pool and wait for the work to finish 
 pool.close() 
