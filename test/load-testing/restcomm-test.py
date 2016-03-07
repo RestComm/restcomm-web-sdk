@@ -21,6 +21,7 @@ import subprocess
 import os 
 import re
 import urllib
+import urlparse
 
 # Notice that we are using the dummy module which is implemented with threads,
 # not multiple processes, as processes might be overkill in our situation (in
@@ -154,19 +155,36 @@ def provisionClients(count, accountSid, authToken, restcommUrl, usernamePrefix, 
 		print TAG + cmd 
 		subprocess.call(cmd.split(), stdout = devnullFile, stderr = devnullFile)
 
-def startServer(count, clientUrl, externalServiceUrl): 
-	print TAG + 'Starting unified node http server to handle both http/https request for the webrtc-client web page, and RCML REST requests from Restcomm'
+def startServer(count, clientUrl, externalServiceUrl, usernamePrefix): 
+	print TAG + 'Starting unified node http to handle both http/https request for the webrtc-client web page, and RCML REST requests from Restcomm'
 
+	externalServicePort = '80'
+	externalServiceParsedUrl = urlparse.urlparse(externalServiceUrl);
+	if externalServiceParsedUrl.port:
+		externalServicePort = externalServiceParsedUrl.port
+	
+	webAppPort = '80'
+	clientParsedUrl = urlparse.urlparse(clientUrl);
+	if (clientParsedUrl.port):
+		webAppPort = clientParsedUrl.port
+
+	secureArg = ''
+	if clientParsedUrl.scheme == 'https':
+		secureArg = '--secure-web-app'
+	
 	# Make a copy of the current environment
-	envDictionary = dict(os.environ)   
+	#envDictionary = dict(os.environ)   
 	# Add the nodejs path, as it isn't found when we run as root
-	envDictionary['NODE_PATH'] = '/usr/local/lib/node_modules'
-	cmd = 'node server.js ' + str(count) + ' 10512 10510 10511'
+	#envDictionary['NODE_PATH'] = '/usr/local/lib/node_modules'
+	#cmd = 'server.js ' + str(count) + ' 10512 10510 10511'
+	cmd = './server.py --client-count ' + str(count) + ' --external-service-port ' + str(externalServicePort) + ' --external-service-client-prefix ' + usernamePrefix + ' --web-app-port ' + str(webAppPort) + ' ' + secureArg
 	# We want it to run in the background
 	#os.system(cmd)
 	#subprocess.call(cmd.split(), env = envDictionary)
+	print "--- CMD: " + cmd
 	global httpProcess
-	httpProcess = subprocess.Popen(cmd.split(), env = envDictionary)
+	#httpProcess = subprocess.Popen(cmd.split(), env = envDictionary)
+	httpProcess = subprocess.Popen(cmd.split())
 	print TAG + 'PID for http server: ' + str(httpProcess.pid)
 
 # TODO: Not finished yet
@@ -191,7 +209,7 @@ def globalSetup(dictionary):
 	provisionClients(dictionary['count'], dictionary['account-sid'], dictionary['auth-token'], dictionary['restcomm-base-url'], dictionary['username-prefix'], dictionary['password'])
 
 	# Start the unified server script to serve both RCML (REST) and html page for webrtc clients to connect to
-	startServer(dictionary['count'], dictionary['client-url'], dictionary['external-service-url'])
+	startServer(dictionary['count'], dictionary['client-url'], dictionary['external-service-url'], dictionary['username-prefix'])
 
 def globalTeardown(dictionary): 
 	print TAG + "Tearing down tests"
@@ -216,7 +234,6 @@ parser.add_argument('--restcomm-account-sid', dest = 'accountSid', required = Tr
 parser.add_argument('--restcomm-auth-token', dest = 'authToken', required = True, help = 'Restcomm auth token, like \'0a01c34aac72a432579fe08fc2461036\'')
 parser.add_argument('--restcomm-phone-number', dest = 'phoneNumber', default = '+5556', help = 'Restcomm phone number to provision and link with external service, like \'+5556\'')
 parser.add_argument('--restcomm-external-service-url', dest = 'externalServiceUrl', default = 'http://127.0.0.1:10512/rcml', help = 'External service URL for Restcomm to get RCML from, like \'http://127.0.0.1:10512/rcml\'')
-
 args = parser.parse_args()
 
 print TAG + 'Webrtc clients settings: \n\tcount: ' + str(args.count) + '\n\ttarget URL: ' + args.clientUrl + '\n\tregister websocket url: ' + args.registerWsUrl + '\n\tregister domain: ' + args.registerDomain + '\n\tusername prefix: ' + args.usernamePrefix + '\n\tpassword: ' + args.password
