@@ -47,34 +47,41 @@ import selenium.common.exceptions
 TAG = '[restcomm-test] '
 # Keep the nodejs process in a global var so that we can reference it after the tests are over to shut it down
 httpProcess = None
+# Used in non-selenium runs
+browserProcesses = list()
 
 def threadFunction(dictionary): 
-	print TAG + '#' + str(dictionary['id']) + ' Running test for URL: ' + dictionary['url']
-
-	chromeOptions = Options()
-	# important: don't request permission for media
-	chromeOptions.add_argument("--use-fake-ui-for-media-stream")
-	# enable browser logging
-	caps = DesiredCapabilities.CHROME
-	#caps['loggingPrefs'] = {'browser': 'ALL', 'client': 'ALL', 'driver': 'ALL', 'performance': 'ALL', 'server': 'ALL'}
-	caps['loggingPrefs'] = { 'browser':'ALL' }
-	#driver = webdriver.Chrome(chrome_options = chromeOptions, desired_capabilities = caps, service_args = ["--verbose", "--log-path=chrome.log"])
-	driver = webdriver.Chrome(chrome_options = chromeOptions, desired_capabilities = caps)
-
-	# navigate to web page
-	driver.get(dictionary['url'])
-	#print driver.title
-
-	#print 'Waiting for condition to be met'
 	try:
+		print TAG + 'browser thread #' + str(dictionary['id']) + ' Running test for URL: ' + dictionary['url']
+
+		chromeOptions = Options()
+		# important: don't request permission for media
+		chromeOptions.add_argument("--use-fake-ui-for-media-stream")
+		# enable browser logging
+		caps = DesiredCapabilities.CHROME
+		#caps['loggingPrefs'] = {'browser': 'ALL', 'client': 'ALL', 'driver': 'ALL', 'performance': 'ALL', 'server': 'ALL'}
+		caps['loggingPrefs'] = { 'browser':'ALL' }
+		#driver = webdriver.Chrome(chrome_options = chromeOptions, desired_capabilities = caps, service_args = ["--verbose", "--log-path=chrome.log"])
+		driver = webdriver.Chrome(chrome_options = chromeOptions, desired_capabilities = caps)
+
+		# navigate to web page
+		driver.get(dictionary['url'])
+		#print driver.title
+
+		#print 'Waiting for condition to be met'
 		#WebDriverWait(driver, 30).until(expected_conditions.text_to_be_present_in_element((By.ID,'log'), 'Connection ended'))
 		# this is actually a hack to keep the browser open for n seconds. Putting the thread to sleep doesn't work and so far I haven't found a nice way to do that in Selenium
-		WebDriverWait(driver, 660).until(expected_conditions.text_to_be_present_in_element((By.ID,'log'), 'Non existing text'))
-	except selenium.common.exceptions.TimeoutException as ex:
-		print TAG + '#' + str(dictionary['id']) + ' Test timed out'
+		WebDriverWait(driver, 300).until(expected_conditions.text_to_be_present_in_element((By.ID,'log'), 'Non existing text'))
 		
+
+	except selenium.common.exceptions.TimeoutException as ex:
+		print TAG + 'EXCEPTION: browser thread #' + str(dictionary['id']) + ' Test timed out'
+	except:
+		print TAG + 'EXCEPTION: browser thread #' +  str(dictionary['id']) + ' Unexpected exception: ', sys.exc_info()[0]
+		return
+
 	# print messages
-	print TAG + '#' + str(dictionary['id']) + ' Saving the logs'
+	print TAG + 'browser thread #' + str(dictionary['id']) + ' Saving the logs'
 	logBuffer = ''
 	for entry in driver.get_log('browser'):
 		# entry is a dictionary
@@ -84,7 +91,7 @@ def threadFunction(dictionary):
 	logFile.write(logBuffer)
 	logFile.close()
 
-	print TAG + '#' + str(dictionary['id']) + ' Closing Driver'
+	print TAG + 'browser thread #' + str(dictionary['id']) + ' Closing Driver'
 	driver.close()
 
 def signalHandler(signal, frame):
@@ -179,18 +186,18 @@ def startServer(count, clientUrl, externalServiceUrl, usernamePrefix):
 		secureArg = '--secure-web-app'
 	
 	# Make a copy of the current environment
-	#envDictionary = dict(os.environ)   
+	envDictionary = dict(os.environ)   
 	# Add the nodejs path, as it isn't found when we run as root
-	#envDictionary['NODE_PATH'] = '/usr/local/lib/node_modules'
+	envDictionary['NODE_PATH'] = '/usr/local/lib/node_modules'
 	#cmd = 'server.js ' + str(count) + ' 10512 10510 10511'
-	cmd = './server.py --client-count ' + str(count) + ' --external-service-port ' + str(externalServicePort) + ' --external-service-client-prefix ' + usernamePrefix + ' --web-app-port ' + str(webAppPort) + ' ' + secureArg
+	cmd = 'node http-server.js --client-count ' + str(count) + ' --external-service-port ' + str(externalServicePort) + ' --external-service-client-prefix ' + usernamePrefix + ' --web-app-port ' + str(webAppPort) + ' ' + secureArg
 	# We want it to run in the background
 	#os.system(cmd)
 	#subprocess.call(cmd.split(), env = envDictionary)
-	print "--- CMD: " + cmd
+	#print "--- CMD: " + cmd
 	global httpProcess
-	#httpProcess = subprocess.Popen(cmd.split(), env = envDictionary)
-	httpProcess = subprocess.Popen(cmd.split())
+	httpProcess = subprocess.Popen(cmd.split(), env = envDictionary)
+	#httpProcess = subprocess.Popen(cmd.split())
 	print TAG + 'PID for http server: ' + str(httpProcess.pid)
 
 # TODO: Not finished yet
@@ -245,22 +252,8 @@ args = parser.parse_args()
 print TAG + 'Webrtc clients settings: \n\tcount: ' + str(args.count) + '\n\ttarget URL: ' + args.clientUrl + '\n\tregister websocket url: ' + args.registerWsUrl + '\n\tregister domain: ' + args.registerDomain + '\n\tusername prefix: ' + args.usernamePrefix + '\n\tpassword: ' + args.password
 print TAG + 'Restcomm instance settings: \n\tbase URL: ' + args.restcommBaseUrl + '\n\taccount sid: ' + args.accountSid + '\n\tauth token: ' + args.authToken + '\n\tphone number: ' + args.phoneNumber + '\n\texternal service URL: ' + args.externalServiceUrl
 # Let's handle sigint so the if testing is interrupted we still cleanup
-signal.signal(signal.SIGINT, signalHandler)
-
-# Populate a list with browser thread ids and URLs for each client thread that will be spawned
-urls = list()
-for i in range(1, args.count + 1):
-	getData = {
-		'username': args.usernamePrefix + str(i),
-		'password': args.password,
-		'register-ws-url': args.registerWsUrl,
-		'register-domain' : args.registerDomain,
-	}
-	urls.append({ 
-		'id': i, 
-		#'url' : args.clientUrl + '?username=' + args.usernamePrefix + str(i) + '&password=' + args.password + '&register-ws-url=' + args.registerWsUrl + '&register-domain=' + args.registerDomain,
-		'url' : args.clientUrl + '?' + urllib.urlencode(getData)
-	})
+# After handling the exceptions we no longer need this
+#signal.signal(signal.SIGINT, signalHandler)
 
 globalSetup({ 
 	'count': args.count, 
@@ -274,22 +267,67 @@ globalSetup({
 	'external-service-url': args.externalServiceUrl
 })
 
-#sys.exit(0)
-print TAG + 'Spawning ' + str(args.count) + ' tester threads' 
+# Populate a list with browser thread ids and URLs for each client thread that will be spawned
+clients = list()
+for i in range(1, args.count + 1):
+	getData = {
+		'username': args.usernamePrefix + str(i),
+		'password': args.password,
+		'register-ws-url': args.registerWsUrl,
+		'register-domain' : args.registerDomain,
+	}
+	clients.append({ 
+		'id': i, 
+		#'url' : args.clientUrl + '?username=' + args.usernamePrefix + str(i) + '&password=' + args.password + '&register-ws-url=' + args.registerWsUrl + '&register-domain=' + args.registerDomain,
+		'url' : args.clientUrl + '?' + urllib.urlencode(getData)
+	})
 
-# Make the Pool of workers
-pool = ThreadPool(args.count) 
-# Open the urls in their own threads and return the results
-results = pool.map(threadFunction, urls)
-# close the pool and wait for the work to finish 
-pool.close() 
-pool.join() 
+useSelenium = False;
+if useSelenium:
+	print TAG + 'Spawning ' + str(args.count) + ' tester threads' 
+	# Make the Pool of workers
+	pool = ThreadPool(args.count) 
+	# Open the urls in their own threads and return the results
+	try:
+		results = pool.map(threadFunction, clients)
+	except:
+		print TAG + 'EXCEPTION: pool.map() failed. Unexpected exception: ', sys.exc_info()[0]
+
+	# close the pool and wait for the work to finish 
+	pool.close() 
+	pool.join() 
+else:
+	#for i in range(1, args.count + 1):
+	for client in clients:
+		# Make a copy of the current environment
+		envDictionary = dict(os.environ)   
+		# Set the chrome log file
+		envDictionary['CHROME_LOG_FILE'] = 'browser#' + str(client['id']) + '.log'
+		cmdList = [ 
+			'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',  
+			client['url'], 
+			' --enable-logging',
+			'--use-fake-ui-for-media-stream',
+		]
+		# We want it to run in the background
+		separator = ' '
+		print TAG + "Spawning browser #" + str(client['id']) + ', command: ' + separator.join(cmdList)
+		devnullFile = open(os.devnull, 'w')
+		client['process'] = subprocess.Popen(cmdList, env = envDictionary, stdout = devnullFile, stderr = devnullFile)
+		#browserProcesses.append(subprocess.Popen(cmd.split(), env = envDictionary))
+	
 
 # raw_input doesn't exist in 3.0 and inputString issues an error in 2.7
 if (sys.version_info < (3, 0)):
 	inputString = raw_input(TAG + 'Press any key to stop the test...\n')
 else:
 	inputString = input(TAG + 'Press any key to stop the test...')
+
+if not useSelenium:
+	#for i in range(1, args.count + 1):
+	for client in clients:
+		print TAG + "Stopping client #" + str(client['id']) 
+		client['process'].terminate()
 
 globalTeardown({ 
 	'count': args.count, 
