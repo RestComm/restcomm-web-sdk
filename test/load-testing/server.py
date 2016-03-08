@@ -1,8 +1,10 @@
 #! /usr/bin/env python
 #
-# This is a unified server used in our testing for serving:
+# This is a 'unified' server used in our testing for serving:
 # - RCML (REST) for Restcomm at /rcml. The logic for RCML is to return a Dial command towards Restcomm Client userX, where X is a increasing counter reaching up to client count and wrapping around so that continuous tests can be ran
 # - html pages of this directory at /, like webrtc-client.html over https/https
+#
+# Two threads are used. One to serve RCML to Restcomm and the other to server the web app html page over http/https
 # 
 # Example invocations:
 # $ server.py --client-count 10 --external-service-port 10512 --secure-web-app --web-app-port 10510
@@ -15,6 +17,8 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import SimpleHTTPServer
 import ssl
 import random
+import re
+from socket import *
 
 # To use multiple processes instead we should  use:
 # import multiprocessing
@@ -27,9 +31,11 @@ usernamePrefix = None
 CLIENT_COUNT = None
 rcmlClientId = 1
 
+# Define a handler for the RCML REST server
 class httpHandler(BaseHTTPRequestHandler):
 	def do_GET(self):
-		if self.path !=  '/rcml':
+		#if self.path != '/rcml':
+		if re.search('^/rcml.*', self.path) == None:
 			self.send_response(403)
 			self.send_header('Content-type', 'text/xml')
 			self.end_headers()
@@ -71,9 +77,10 @@ def threadFunction(dictionary):
 
 	if dictionary['type'] == 'app-web-server':
 		httpd = SocketServer.TCPServer(("", dictionary['port']), SimpleHTTPServer.SimpleHTTPRequestHandler)
-		if 'secure' in dictionary.keys():
+		if 'secure' in dictionary.keys() and dictionary['secure']:
 			httpd.socket = ssl.wrap_socket(httpd.socket, keyfile='cert/key.pem', certfile='cert/cert.pem', server_side=True)
 
+	httpd.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 	httpd.serve_forever()
 
 

@@ -22,6 +22,7 @@ import os
 import re
 import urllib
 import urlparse
+import signal
 
 # Notice that we are using the dummy module which is implemented with threads,
 # not multiple processes, as processes might be overkill in our situation (in
@@ -86,6 +87,10 @@ def threadFunction(dictionary):
 	print TAG + '#' + str(dictionary['id']) + ' Closing Driver'
 	driver.close()
 
+def signalHandler(signal, frame):
+	print('User interrupted testing with SIGINT; bailing out')
+	stopServer()
+	sys.exit(0)
 
 # take a url and break it in protocol and transport counterparts
 def breakUrl(url):
@@ -123,6 +128,7 @@ def provisionPhoneNumber(phoneNumber, externalServiceUrl, accountSid, authToken,
 	postData = {
 		'PhoneNumber': phoneNumber,
 		'VoiceUrl': externalServiceUrl,
+		'VoiceMethod': 'GET',
 		'FriendlyName': 'Load Testing App',
 		'isSIP' : 'true',
 	}
@@ -156,7 +162,7 @@ def provisionClients(count, accountSid, authToken, restcommUrl, usernamePrefix, 
 		subprocess.call(cmd.split(), stdout = devnullFile, stderr = devnullFile)
 
 def startServer(count, clientUrl, externalServiceUrl, usernamePrefix): 
-	print TAG + 'Starting unified node http to handle both http/https request for the webrtc-client web page, and RCML REST requests from Restcomm'
+	print TAG + 'Starting http server to handle both http/https request for the webrtc-client web page, and RCML REST requests from Restcomm'
 
 	externalServicePort = '80'
 	externalServiceParsedUrl = urlparse.urlparse(externalServiceUrl);
@@ -196,7 +202,7 @@ def unprovisionClients(count, accountSid, authToken, restcommUrl):
 
 def stopServer(): 
 	if httpProcess:
-		print TAG + 'Stopping unified node http server'
+		print TAG + 'Stopping http server'
 		httpProcess.terminate()
 
 def globalSetup(dictionary): 
@@ -238,6 +244,8 @@ args = parser.parse_args()
 
 print TAG + 'Webrtc clients settings: \n\tcount: ' + str(args.count) + '\n\ttarget URL: ' + args.clientUrl + '\n\tregister websocket url: ' + args.registerWsUrl + '\n\tregister domain: ' + args.registerDomain + '\n\tusername prefix: ' + args.usernamePrefix + '\n\tpassword: ' + args.password
 print TAG + 'Restcomm instance settings: \n\tbase URL: ' + args.restcommBaseUrl + '\n\taccount sid: ' + args.accountSid + '\n\tauth token: ' + args.authToken + '\n\tphone number: ' + args.phoneNumber + '\n\texternal service URL: ' + args.externalServiceUrl
+# Let's handle sigint so the if testing is interrupted we still cleanup
+signal.signal(signal.SIGINT, signalHandler)
 
 # Populate a list with browser thread ids and URLs for each client thread that will be spawned
 urls = list()
