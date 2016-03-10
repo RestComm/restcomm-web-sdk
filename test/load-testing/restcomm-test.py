@@ -144,7 +144,8 @@ def provisionPhoneNumber(phoneNumber, externalServiceUrl, accountSid, authToken,
 	#cmd = 'curl -X POST ' + restBaseUrlFromCounterparts(accountSid, authToken, restcommUrl) + '/IncomingPhoneNumbers.json -d PhoneNumber=' + phoneNumber + ' -d VoiceUrl=' + externalServiceUrl + ' -d FriendlyName=LoadTestingApp -d isSIP=true'
 	cmd = 'curl ' + curlSecureOptionsIfApplicable(restcommUrl) + ' -X POST ' + restBaseUrlFromCounterparts(accountSid, authToken, restcommUrl) + '/IncomingPhoneNumbers.json -d ' + urllib.urlencode(postData)
 	print TAG + cmd 
-	subprocess.call(cmd.split(), stdout = devnullFile, stderr = devnullFile)
+	#subprocess.call(cmd.split(), stdout = devnullFile, stderr = devnullFile)
+	subprocess.call(cmd.split())
 
 
 # Provision Restcomm Clients via REST call
@@ -168,7 +169,8 @@ def provisionClients(count, accountSid, authToken, restcommUrl, usernamePrefix, 
 		cmd = 'curl ' + curlSecureOptionsIfApplicable(restcommUrl) + ' -X POST ' + restBaseUrlFromCounterparts(accountSid, authToken, restcommUrl) + '/Clients.json -d ' + urllib.urlencode(postData)
 		#system(cmd)
 		print TAG + cmd 
-		subprocess.call(cmd.split(), stdout = devnullFile, stderr = devnullFile)
+		#subprocess.call(cmd.split(), stdout = devnullFile, stderr = devnullFile)
+		subprocess.call(cmd.split())
 
 def startServer(count, clientUrl, externalServiceUrl, usernamePrefix): 
 	print TAG + 'Starting http server to handle both http/https request for the webrtc-client web page, and RCML REST requests from Restcomm'
@@ -244,7 +246,9 @@ parser.add_argument('--client-register-ws-url', dest = 'registerWsUrl', default 
 parser.add_argument('--client-register-domain', dest = 'registerDomain', default = '127.0.0.1', help = 'Webrtc clients domain for registering, like \'127.0.0.1\'')
 parser.add_argument('--client-username-prefix', dest = 'usernamePrefix', default = 'user', help = 'User prefix for the clients, like \'user\'')
 parser.add_argument('--client-password', dest = 'password', default = '1234', help = 'Password for the clients, like \'1234\'')
-parser.add_argument('--client-browser', dest = 'clientBrowser', default = 'chrome', help = 'Browser to use for client web app. Currently \'chrome\' and \'firefox\' are supported')
+parser.add_argument('--client-browser', dest = 'clientBrowser', default = 'firefox', help = 'Browser to use for client web app. Currently \'chrome\' and \'firefox\' are supported')
+parser.add_argument('--client-browser-executable', dest = 'clientBrowserExecutable', default = '', help = 'Use a custom executable for the browser. Defaults are \'firefox\' and  \'chromium-browser\' depending on --client-browser')
+parser.add_argument('--client-headless', dest = 'clientHeadless', action = 'store_true', default = False, help = 'Should we use a headless browser?')
 parser.add_argument('--restcomm-base-url', dest = 'restcommBaseUrl', default = 'http://127.0.0.1:8080', help = 'Restcomm instance base URL, like \'http://127.0.0.1:8080\'')
 parser.add_argument('--restcomm-account-sid', dest = 'accountSid', required = True, help = 'Restcomm accound Sid, like \'ACae6e420f425248d6a26948c17a9e2acf\'')
 parser.add_argument('--restcomm-auth-token', dest = 'authToken', required = True, help = 'Restcomm auth token, like \'0a01c34aac72a432579fe08fc2461036\'')
@@ -252,7 +256,17 @@ parser.add_argument('--restcomm-phone-number', dest = 'phoneNumber', default = '
 parser.add_argument('--restcomm-external-service-url', dest = 'externalServiceUrl', default = 'http://127.0.0.1:10512/rcml', help = 'External service URL for Restcomm to get RCML from, like \'http://127.0.0.1:10512/rcml\'')
 args = parser.parse_args()
 
-print TAG + 'Webrtc clients settings: \n\tcount: ' + str(args.count) + '\n\ttarget URL: ' + args.clientUrl + '\n\tregister websocket url: ' + args.registerWsUrl + '\n\tregister domain: ' + args.registerDomain + '\n\tusername prefix: ' + args.usernamePrefix + '\n\tpassword: ' + args.password + '\n\tbrowser: ' + args.clientBrowser
+browser = None
+if args.clientBrowserExecutable == '':
+	if args.clientBrowser == 'chrome':
+		browser = 'chromium-browser';
+	else:
+		browser = 'firefox';
+else:
+	browser = args.clientBrowserExecutable;
+
+
+print TAG + 'Webrtc clients settings: \n\tcount: ' + str(args.count) + '\n\ttarget URL: ' + args.clientUrl + '\n\tregister websocket url: ' + args.registerWsUrl + '\n\tregister domain: ' + args.registerDomain + '\n\tusername prefix: ' + args.usernamePrefix + '\n\tpassword: ' + args.password + '\n\tbrowser: ' + args.clientBrowser + '\n\tbrowser executable: ' + browser + '\n\theadless: ' + str(args.clientHeadless)
 print TAG + 'Restcomm instance settings: \n\tbase URL: ' + args.restcommBaseUrl + '\n\taccount sid: ' + args.accountSid + '\n\tauth token: ' + args.authToken + '\n\tphone number: ' + args.phoneNumber + '\n\texternal service URL: ' + args.externalServiceUrl
 # Let's handle sigint so the if testing is interrupted we still cleanup
 signal.signal(signal.SIGINT, signalHandler)
@@ -277,6 +291,7 @@ for i in range(1, args.count + 1):
 		'password': args.password,
 		'register-ws-url': args.registerWsUrl,
 		'register-domain' : args.registerDomain,
+		'fake-media': str(args.clientHeadless).lower(),
 	}
 	clients.append({ 
 		'id': i, 
@@ -285,6 +300,7 @@ for i in range(1, args.count + 1):
 	})
 
 useSelenium = False;
+browserProcess = None
 if useSelenium:
 	print TAG + 'Spawning ' + str(args.count) + ' tester threads' 
 	# Make the Pool of workers
@@ -299,40 +315,56 @@ if useSelenium:
 	pool.close() 
 	pool.join() 
 else:
-	for client in clients:
+	envDictionary = None
+	cmdList = None
+	if args.clientBrowser == 'chrome':
 		envDictionary = None
-		cmdList = None
-		if args.clientBrowser == 'chrome':
-			# Make a copy of the current environment
-			envDictionary = dict(os.environ)   
-			# Set the chrome log file
-			envDictionary['CHROME_LOG_FILE'] = 'browser#' + str(client['id']) + '.log'
-			cmdList = [ 
-				'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',  
-				client['url'], 
-				#'--user-data-dir=' + str(client['id']),
-				#'--incognito',
-				#'--new-window',
-				'--enable-logging',
-				'--use-fake-ui-for-media-stream',
-				'--process-per-tab',
-			]
-		else:
-			# Firefox
-			cmdList = [ 
-				'open',  
-				'-a',
-				'Firefox',
-				#'--args', 
-				#'--new-tab',
-				client['url'], 
-			]
-		# We want it to run in the background
-		separator = ' '
-		print TAG + "Spawning browser #" + str(client['id']) + ', command: ' + separator.join(cmdList)
-		devnullFile = open(os.devnull, 'w')
-		client['process'] = subprocess.Popen(cmdList, env = envDictionary, stdout = devnullFile, stderr = devnullFile)
-		time.sleep(1)
+		# Make a copy of the current environment
+		envDictionary = dict(os.environ)   
+		# Set the chrome log file
+		#envDictionary['CHROME_LOG_FILE'] = 'browser#' + str(client['id']) + '.log'
+		envDictionary['CHROME_LOG_FILE'] = 'chrome.log'
+		cmdList = [ 
+			#'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',  
+			browser,
+			#client['url'], 
+			#'--user-data-dir=' + str(client['id']),
+			#'--incognito',
+			#'--new-window',
+			'--enable-logging',
+			'--use-fake-ui-for-media-stream',
+			'--process-per-tab',
+		]
+
+
+	else:
+		# Make a copy of the current environment
+		envDictionary = None
+		envDictionary = dict(os.environ)   
+		# Set the chrome log file
+		#envDictionary['NSPR_LOG_FILE'] = 'browser#' + str(client['id']) + '.log'
+		envDictionary['NSPR_LOG_FILE'] = 'firefox.log'
+		# not sure why but this is the 'module' name for the web console and '5' to get all levels
+		envDictionary['NSPR_LOG_MODULES'] = 'textrun:5'
+		envDictionary['DISPLAY'] = ':99'
+		# Firefox
+		cmdList = [ 
+			browser,
+			'--jsconsole',   # without this I'm not getting proper logs for some weird reason
+			#'--args', 
+			#'--new-tab',
+			#client['url'], 
+		]
+
+	# add all the links in the command after the options
+	for client in clients:
+		cmdList.append(client['url'])
+
+	# We want it to run in the background
+	separator = ' '
+	print TAG + 'Spawning ' + str(len(cmdList)) + ' browsers. Command: ' + separator.join(cmdList)
+	devnullFile = open(os.devnull, 'w')
+	browserProcess = subprocess.Popen(cmdList, env = envDictionary, stdout = devnullFile, stderr = devnullFile)
 	
 
 # raw_input doesn't exist in 3.0 and inputString issues an error in 2.7
@@ -342,9 +374,8 @@ else:
 	inputString = input(TAG + 'Press any key to stop the test...')
 
 if not useSelenium:
-	for client in clients:
-		print TAG + "Stopping browser #" + str(client['id']) 
-		client['process'].kill()
+	print TAG + "Stopping browser"
+	browserProcess.kill()
 
 globalTeardown({ 
 	'count': args.count, 

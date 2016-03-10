@@ -388,9 +388,13 @@ Connection.prototype.accept = function(parameters)
 	remoteMedia = parameters['remote-media'];
 	this.parameters['video-enabled'] = parameters['video-enabled'];
 
+	if (!parameters['fake-media']) {
+		parameters['fake-media'] = false;
+	}
+
 	var that = this;
 	// webrtc getUserMedia
-	getUserMedia({audio:true, video:parameters['video-enabled']}, 
+	getUserMedia({audio:true, video:parameters['video-enabled'], fake: parameters['fake-media']}, 
 			function(stream) {
 				// got local stream as result of getUserMedia() -add it to localVideo html element
 				if (that.debugEnabled) {
@@ -960,9 +964,12 @@ var RestCommClient = {
 					'video-enabled': parameters['video-enabled'],
 				};
 
+				if (!parameters['fake-media']) {
+					parameters['fake-media'] = false;
+				}
 				var that = this;
 				// webrtc getUserMedia
-				getUserMedia({audio:true, video:parameters['video-enabled']}, 
+				getUserMedia({audio:true, video:parameters['video-enabled'], fake: parameters['fake-media']}, 
 						function(stream) {
 							// got local stream as result of getUserMedia() -add it to localVideo html element
 							if (that.debugEnabled) {

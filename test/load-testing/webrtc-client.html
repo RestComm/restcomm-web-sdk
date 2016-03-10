@@ -95,6 +95,18 @@
 		if (!registerDomain) {
 			registerDomain = '127.0.0.1'
 		}
+		var fakeMedia = getParameterByName('fake-media');
+		if (!fakeMedia) {
+			fakeMedia = false;
+		}
+		else {
+			if (fakeMedia == 'true') {
+				fakeMedia = true;
+			}
+			else {
+				fakeMedia = false;
+			}
+		}
 
 		var currentConnection;
 		var parameters = {
@@ -155,7 +167,9 @@
 				'video-enabled': useVideo,
 				'local-media': localMedia,
 				'remote-media': remoteMedia,
+				'fake-media': fakeMedia,
 			};
+			//console.log('Device.connectt() params: ' + JSON.stringify(parameters));
 			currentConnection = RestCommClient.Device.connect(parameters);
 
 			currentConnection.disconnect(function(connection) {
@@ -180,7 +194,9 @@
 				'video-enabled': useVideo,
 				'local-media': localMedia,
 				'remote-media': remoteMedia,
+				'fake-media': fakeMedia,
 			};
+			//console.log('Connection.accept() params: ' + JSON.stringify(parameters));
 			currentConnection.accept(parameters);
 		}
 
