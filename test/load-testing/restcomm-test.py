@@ -51,6 +51,11 @@ TAG = '[restcomm-test] '
 httpProcess = None
 # Used in non-selenium runs
 browserProcesses = list()
+# restcomm test modes. Which parts of the tool do we want executed (bitmap):
+# - 001: Spawn webrtc browsers
+# - 010: Start HTTP server for external service & web app
+# - 100: Do Restcomm provisioning/unprovisioning
+testModes = None
 
 def threadFunction(dictionary): 
 	try:
@@ -219,25 +224,38 @@ def stopServer():
 def globalSetup(dictionary): 
 	print TAG + "Setting up tests"
 
-	# Provision Restcomm with the needed Clients
-	provisionPhoneNumber(dictionary['phone-number'], dictionary['external-service-url'], dictionary['account-sid'], dictionary['auth-token'], dictionary['restcomm-base-url'])
+	global testModes
+	# if user asked for restcomm provisioning/unprovisioning (i.e. testModes = 001 binary)
+	if testModes & 1:
+		# Provision Restcomm with the needed Clients
+		provisionPhoneNumber(dictionary['phone-number'], dictionary['external-service-url'], dictionary['account-sid'], dictionary['auth-token'], dictionary['restcomm-base-url'])
 
-	# Provision Restcomm with the needed Clients
-	provisionClients(dictionary['count'], dictionary['account-sid'], dictionary['auth-token'], dictionary['restcomm-base-url'], dictionary['username-prefix'], dictionary['password'])
+		# Provision Restcomm with the needed Clients
+		provisionClients(dictionary['count'], dictionary['account-sid'], dictionary['auth-token'], dictionary['restcomm-base-url'], dictionary['username-prefix'], dictionary['password'])
 
-	# Start the unified server script to serve both RCML (REST) and html page for webrtc clients to connect to
-	startServer(dictionary['count'], dictionary['client-url'], dictionary['external-service-url'], dictionary['username-prefix'])
+	# if user asked for http server to be started  (i.e. testModes = 010 binary)
+	if testModes & 2:
+		# Start the unified server script to serve both RCML (REST) and html page for webrtc clients to connect to
+		startServer(dictionary['count'], dictionary['client-url'], dictionary['external-service-url'], dictionary['username-prefix'])
 
 def globalTeardown(dictionary): 
 	print TAG + "Tearing down tests"
 
-	# Provision Restcomm with the needed Clients
-	unprovisionClients(dictionary['count'], dictionary['account-sid'], dictionary['auth-token'], dictionary['restcomm-base-url'])
+	global testModes
+	# if user asked for restcomm provisioning/unprovisioning (i.e. testModes = 001 binary)
+	if testModes & 1:
+		# Provision Restcomm with the needed Clients
+		unprovisionClients(dictionary['count'], dictionary['account-sid'], dictionary['auth-token'], dictionary['restcomm-base-url'])
 
-	# Start the unified server script to serve both RCML (REST) and html page for webrtc clients to connect to
-	stopServer()
+	# if user asked for http server to be started  (i.e. testModes = 010 binary)
+	if testModes & 2:
+		# Start the unified server script to serve both RCML (REST) and html page for webrtc clients to connect to
+		stopServer()
 
 ## --------------- Main code --------------- ##
+# - 001: Do Restcomm provisioning/unprovisioning
+# - 010: Start HTTP server for external service & web app
+# - 100: Spawn webrtc browsers
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--client-count', dest = 'count', default = 10, type = int, help = 'Count of Webrtc clients spawned for the test')
@@ -249,11 +267,13 @@ parser.add_argument('--client-password', dest = 'password', default = '1234', he
 parser.add_argument('--client-browser', dest = 'clientBrowser', default = 'firefox', help = 'Browser to use for client web app. Currently \'chrome\' and \'firefox\' are supported')
 parser.add_argument('--client-browser-executable', dest = 'clientBrowserExecutable', default = '', help = 'Use a custom executable for the browser. Defaults are \'firefox\' and  \'chromium-browser\' depending on --client-browser')
 parser.add_argument('--client-headless', dest = 'clientHeadless', action = 'store_true', default = False, help = 'Should we use a headless browser?')
+parser.add_argument('--client-headless-x-display', dest = 'clientHeadlessDisplay', default = ':99', help = 'When using headless, which virtual X display to use when setting DISPLAY env variable. Default is \':99\'')
 parser.add_argument('--restcomm-base-url', dest = 'restcommBaseUrl', default = 'http://127.0.0.1:8080', help = 'Restcomm instance base URL, like \'http://127.0.0.1:8080\'')
 parser.add_argument('--restcomm-account-sid', dest = 'accountSid', required = True, help = 'Restcomm accound Sid, like \'ACae6e420f425248d6a26948c17a9e2acf\'')
 parser.add_argument('--restcomm-auth-token', dest = 'authToken', required = True, help = 'Restcomm auth token, like \'0a01c34aac72a432579fe08fc2461036\'')
 parser.add_argument('--restcomm-phone-number', dest = 'phoneNumber', default = '+5556', help = 'Restcomm phone number to provision and link with external service, like \'+5556\'')
 parser.add_argument('--restcomm-external-service-url', dest = 'externalServiceUrl', default = 'http://127.0.0.1:10512/rcml', help = 'External service URL for Restcomm to get RCML from, like \'http://127.0.0.1:10512/rcml\'')
+parser.add_argument('--test-modes', dest = 'testModes', default = 7, type = int, help = 'Testing modes for the load test. Which parts of the tool do we want to run? Provisioning, HTTP server, client browsers or any combination of those. This is a bitmap where binary 001 (i.e. 1) means to do provisioning unprovisioning, binary 010 (i.e. 2) means start HTTP(S) server and binary 100 (i.e. 4) means to spawn webrtb browsers. Default is binary 111 (i.e. 7) which means to do all the above')
 args = parser.parse_args()
 
 browser = None
@@ -266,8 +286,13 @@ else:
 	browser = args.clientBrowserExecutable;
 
 
-print TAG + 'Webrtc clients settings: \n\tcount: ' + str(args.count) + '\n\ttarget URL: ' + args.clientUrl + '\n\tregister websocket url: ' + args.registerWsUrl + '\n\tregister domain: ' + args.registerDomain + '\n\tusername prefix: ' + args.usernamePrefix + '\n\tpassword: ' + args.password + '\n\tbrowser: ' + args.clientBrowser + '\n\tbrowser executable: ' + browser + '\n\theadless: ' + str(args.clientHeadless)
+print TAG + 'Webrtc clients settings: \n\tcount: ' + str(args.count) + '\n\ttarget URL: ' + args.clientUrl + '\n\tregister websocket url: ' + args.registerWsUrl + '\n\tregister domain: ' + args.registerDomain + '\n\tusername prefix: ' + args.usernamePrefix + '\n\tpassword: ' + args.password + '\n\tbrowser: ' + args.clientBrowser + '\n\tbrowser executable: ' + browser + '\n\theadless: ' + str(args.clientHeadless) + '\n\theadless X display: ' + args.clientHeadlessDisplay
 print TAG + 'Restcomm instance settings: \n\tbase URL: ' + args.restcommBaseUrl + '\n\taccount sid: ' + args.accountSid + '\n\tauth token: ' + args.authToken + '\n\tphone number: ' + args.phoneNumber + '\n\texternal service URL: ' + args.externalServiceUrl
+print TAG + 'Testing modes: ' + str(args.testModes)
+
+# assign to global to be able to use from functions
+testModes = args.testModes
+
 # Let's handle sigint so the if testing is interrupted we still cleanup
 signal.signal(signal.SIGINT, signalHandler)
 
@@ -295,77 +320,78 @@ for i in range(1, args.count + 1):
 	}
 	clients.append({ 
 		'id': i, 
-		#'url' : args.clientUrl + '?username=' + args.usernamePrefix + str(i) + '&password=' + args.password + '&register-ws-url=' + args.registerWsUrl + '&register-domain=' + args.registerDomain,
 		'url' : args.clientUrl + '?' + urllib.urlencode(getData)
 	})
 
-useSelenium = False;
 browserProcess = None
-if useSelenium:
-	print TAG + 'Spawning ' + str(args.count) + ' tester threads' 
-	# Make the Pool of workers
-	pool = ThreadPool(args.count) 
-	# Open the urls in their own threads and return the results
-	try:
-		results = pool.map(threadFunction, clients)
-	except:
-		print TAG + 'EXCEPTION: pool.map() failed. Unexpected exception: ', sys.exc_info()[0]
+# if user asked for browsers to be spawned (i.e. testModes = 100 binary)
+if testModes & 4:
+	useSelenium = False;
+	if useSelenium:
+		print TAG + 'Spawning ' + str(args.count) + ' tester threads' 
+		# Make the Pool of workers
+		pool = ThreadPool(args.count) 
+		# Open the urls in their own threads and return the results
+		try:
+			results = pool.map(threadFunction, clients)
+		except:
+			print TAG + 'EXCEPTION: pool.map() failed. Unexpected exception: ', sys.exc_info()[0]
 
-	# close the pool and wait for the work to finish 
-	pool.close() 
-	pool.join() 
-else:
-	envDictionary = None
-	cmdList = None
-	if args.clientBrowser == 'chrome':
-		envDictionary = None
-		# Make a copy of the current environment
-		envDictionary = dict(os.environ)   
-		# Set the chrome log file
-		#envDictionary['CHROME_LOG_FILE'] = 'browser#' + str(client['id']) + '.log'
-		envDictionary['CHROME_LOG_FILE'] = 'chrome.log'
-		cmdList = [ 
-			#'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',  
-			browser,
-			#client['url'], 
-			#'--user-data-dir=' + str(client['id']),
-			#'--incognito',
-			#'--new-window',
-			'--enable-logging',
-			'--use-fake-ui-for-media-stream',
-			'--process-per-tab',
-		]
-
-
+		# close the pool and wait for the work to finish 
+		pool.close() 
+		pool.join() 
 	else:
-		# Make a copy of the current environment
 		envDictionary = None
-		envDictionary = dict(os.environ)   
-		# Set the chrome log file
-		#envDictionary['NSPR_LOG_FILE'] = 'browser#' + str(client['id']) + '.log'
-		envDictionary['NSPR_LOG_FILE'] = 'firefox.log'
-		# not sure why but this is the 'module' name for the web console and '5' to get all levels
-		envDictionary['NSPR_LOG_MODULES'] = 'textrun:5'
-		envDictionary['DISPLAY'] = ':99'
-		# Firefox
-		cmdList = [ 
-			browser,
-			'--jsconsole',   # without this I'm not getting proper logs for some weird reason
-			#'--args', 
-			#'--new-tab',
-			#client['url'], 
-		]
+		cmdList = None
+		if args.clientBrowser == 'chrome':
+			envDictionary = None
+			# Make a copy of the current environment
+			envDictionary = dict(os.environ)   
+			# Set the chrome log file
+			#envDictionary['CHROME_LOG_FILE'] = 'browser#' + str(client['id']) + '.log'
+			envDictionary['CHROME_LOG_FILE'] = 'chrome.log'
+			envDictionary['DISPLAY'] = args.clientHeadlessDisplay
+			cmdList = [ 
+				#'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',  
+				browser,
+				#client['url'], 
+				#'--user-data-dir=' + str(client['id']),
+				#'--incognito',
+				#'--new-window',
+				'--enable-logging',
+				'--use-fake-ui-for-media-stream',
+				'--process-per-tab',
+			]
 
-	# add all the links in the command after the options
-	for client in clients:
-		cmdList.append(client['url'])
 
-	# We want it to run in the background
-	separator = ' '
-	print TAG + 'Spawning ' + str(len(cmdList)) + ' browsers. Command: ' + separator.join(cmdList)
-	devnullFile = open(os.devnull, 'w')
-	browserProcess = subprocess.Popen(cmdList, env = envDictionary, stdout = devnullFile, stderr = devnullFile)
-	
+		else:
+			# Make a copy of the current environment
+			envDictionary = None
+			envDictionary = dict(os.environ)   
+			# Set the chrome log file
+			#envDictionary['NSPR_LOG_FILE'] = 'browser#' + str(client['id']) + '.log'
+			envDictionary['NSPR_LOG_FILE'] = 'firefox.log'
+			# not sure why but this is the 'module' name for the web console and '5' to get all levels
+			envDictionary['NSPR_LOG_MODULES'] = 'textrun:5'
+			envDictionary['DISPLAY'] = args.clientHeadlessDisplay
+			# Firefox
+			cmdList = [ 
+				browser,
+				'--jsconsole',   # without this I'm not getting proper logs for some weird reason
+				#'--args', 
+				#'--new-tab',
+				#client['url'], 
+			]
+
+		# add all the links in the command after the options
+		for client in clients:
+			cmdList.append(client['url'])
+
+		separator = ' '
+		print TAG + 'Spawning ' + str(len(cmdList)) + ' browsers. Command: ' + separator.join(cmdList)
+		devnullFile = open(os.devnull, 'w')
+		# We want it to run in the background
+		browserProcess = subprocess.Popen(cmdList, env = envDictionary, stdout = devnullFile, stderr = devnullFile)
 
 # raw_input doesn't exist in 3.0 and inputString issues an error in 2.7
 if (sys.version_info < (3, 0)):
@@ -373,9 +399,11 @@ if (sys.version_info < (3, 0)):
 else:
 	inputString = input(TAG + 'Press any key to stop the test...')
 
-if not useSelenium:
-	print TAG + "Stopping browser"
-	browserProcess.kill()
+# if user asked for browsers to be spawned (i.e. testModes = 100 binary)
+if testModes & 4:
+	if not useSelenium:
+		print TAG + "Stopping browser"
+		browserProcess.kill()
 
 globalTeardown({ 
 	'count': args.count, 
