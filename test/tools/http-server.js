@@ -28,6 +28,7 @@ var cli = commandLineArgs([
   { name: 'external-service-port', alias: 'p', type: Number, defaultValue: 10512 },
   { name: 'external-service-client-prefix', alias: 'x', type: String, defaultValue: 'user' },
   { name: 'web-app-port', alias: 'w', type: Number, defaultValue: 10510 },
+  { name: 'web-app-dir', alias: 'd', type: String, defaultValue: '.' },
   { name: 'secure-web-app', alias: 's', type: Boolean, defaultValue: false },
   { name: 'help', alias: 'h' },
 ]);
@@ -62,7 +63,7 @@ console.log(TAG + 'External service settings: \n\tclient count: ' + options['cli
 console.log(TAG + 'Web app server settings: \n\tport: ' + options['web-app-port'] + '\n\tsecure: ' + options['secure-web-app']);
 
 // -- Serve html pages over http
-var fileServer = new(nodeStatic.Server)();
+var fileServer = new nodeStatic.Server(options['web-app-dir']);
 var app = null;
 
 if (!options['secure-web-app']) {

@@ -60,6 +60,8 @@ browserProcesses = list()
 # - 010: Start HTTP server for external service & web app
 # - 100: Do Restcomm provisioning/unprovisioning
 testModes = None
+# Command line args
+args = None
 
 def threadFunction(dictionary): 
 	try:
@@ -181,7 +183,7 @@ def provisionClients(count, accountSid, authToken, restcommUrl, usernamePrefix, 
 		#subprocess.call(cmd.split(), stdout = devnullFile, stderr = devnullFile)
 		subprocess.call(cmd.split())
 
-def startServer(count, clientUrl, externalServiceUrl, usernamePrefix): 
+def startServer(count, clientUrl, externalServiceUrl, usernamePrefix, clientWebAppDir): 
 	print TAG + 'Starting http server to handle both http/https request for the webrtc-client web page, and RCML REST requests from Restcomm'
 
 	externalServicePort = '80'
@@ -203,7 +205,7 @@ def startServer(count, clientUrl, externalServiceUrl, usernamePrefix):
 	# Add the nodejs path, as it isn't found when we run as root
 	envDictionary['NODE_PATH'] = '/usr/local/lib/node_modules'
 	#cmd = 'server.js ' + str(count) + ' 10512 10510 10511'
-	cmd = 'node http-server.js --client-count ' + str(count) + ' --external-service-port ' + str(externalServicePort) + ' --external-service-client-prefix ' + usernamePrefix + ' --web-app-port ' + str(webAppPort) + ' ' + secureArg
+	cmd = 'node http-server.js --client-count ' + str(count) + ' --external-service-port ' + str(externalServicePort) + ' --external-service-client-prefix ' + usernamePrefix + ' --web-app-port ' + str(webAppPort) + ' ' + secureArg + ' --web-app-dir ' + clientWebAppDir
 	# We want it to run in the background
 	#os.system(cmd)
 	#subprocess.call(cmd.split(), env = envDictionary)
@@ -240,7 +242,7 @@ def globalSetup(dictionary):
 	# if user asked for http server to be started  (i.e. testModes = 010 binary)
 	if testModes & 2:
 		# Start the unified server script to serve both RCML (REST) and html page for webrtc clients to connect to
-		startServer(dictionary['count'], dictionary['client-url'], dictionary['external-service-url'], dictionary['username-prefix'])
+		startServer(dictionary['count'], dictionary['client-url'], dictionary['external-service-url'], dictionary['username-prefix'], dictionary['client-web-app-dir'])
 
 def globalTeardown(dictionary): 
 	print TAG + "Tearing down tests"
@@ -264,6 +266,7 @@ def globalTeardown(dictionary):
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--client-count', dest = 'count', default = 10, type = int, help = 'Count of Webrtc clients spawned for the test')
 parser.add_argument('--client-url', dest = 'clientUrl', default = 'http://127.0.0.1:10510/webrtc-client.html', help = 'Webrtc clients target URL, like \'http://127.0.0.1:10510/webrtc-client.html\'')
+parser.add_argument('--client-web-app-dir', dest = 'clientWebAppDir', default = '.', help = 'Directory where the web app resides, so that our http server knows what to serve, like \'../webrtc-load-tests\'')
 parser.add_argument('--client-register-ws-url', dest = 'registerWsUrl', default = 'ws://127.0.0.1:5082', help = 'Webrtc clients target websocket URL for registering, like \'ws://127.0.0.1:5082\'')
 parser.add_argument('--client-register-domain', dest = 'registerDomain', default = '127.0.0.1', help = 'Webrtc clients domain for registering, like \'127.0.0.1\'')
 parser.add_argument('--client-username-prefix', dest = 'usernamePrefix', default = 'user', help = 'User prefix for the clients, like \'user\'')
@@ -311,7 +314,8 @@ globalSetup({
 	'auth-token': args.authToken, 
 	'restcomm-base-url': args.restcommBaseUrl,
 	'phone-number': args.phoneNumber, 
-	'external-service-url': args.externalServiceUrl
+	'external-service-url': args.externalServiceUrl,
+	'client-web-app-dir': args.clientWebAppDir,
 })
 
 # Populate a list with browser thread ids and URLs for each client thread that will be spawned
