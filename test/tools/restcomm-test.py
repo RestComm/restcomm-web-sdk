@@ -13,6 +13,7 @@
 # - Enhance this so that it also works in Linux machines. Currently it has been tested only in OSX. Some changes needed:
 #   * Browser executables reside in different places
 # - Fix the unprovisioning functionality also remove the Restcomm Clients and Restcomm Number
+# - Make accountSid and authToken not required since we have introduced the --test-modes where we can configure if we want provisioning to take place or not 
 #
 
 import argparse
@@ -46,6 +47,9 @@ from selenium.webdriver.common.by import By
 import selenium.common.exceptions
 
 # Globals
+# Version
+VERSION = "restcomm-test.py 0.3.1"
+# TAG for console logs
 TAG = '[restcomm-test] '
 # Keep the nodejs process in a global var so that we can reference it after the tests are over to shut it down
 httpProcess = None
@@ -274,6 +278,8 @@ parser.add_argument('--restcomm-auth-token', dest = 'authToken', required = True
 parser.add_argument('--restcomm-phone-number', dest = 'phoneNumber', default = '+5556', help = 'Restcomm phone number to provision and link with external service, like \'+5556\'')
 parser.add_argument('--restcomm-external-service-url', dest = 'externalServiceUrl', default = 'http://127.0.0.1:10512/rcml', help = 'External service URL for Restcomm to get RCML from, like \'http://127.0.0.1:10512/rcml\'')
 parser.add_argument('--test-modes', dest = 'testModes', default = 7, type = int, help = 'Testing modes for the load test. Which parts of the tool do we want to run? Provisioning, HTTP server, client browsers or any combination of those. This is a bitmap where binary 001 (i.e. 1) means to do provisioning unprovisioning, binary 010 (i.e. 2) means start HTTP(S) server and binary 100 (i.e. 4) means to spawn webrtb browsers. Default is binary 111 (i.e. 7) which means to do all the above')
+parser.add_argument('--version', action = 'version', version = VERSION)
+
 args = parser.parse_args()
 
 browser = None
