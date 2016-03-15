@@ -60,7 +60,7 @@ if (process.argv[5]) {
 
 //console.log('[server.js] Initializing http(s) server with ' + options[' + ' clients: \n\tRCML (REST) port: ' + RCML_PORT + ' \n\thttp (Webrtc App) port: ' + HTTP_PORT + ' \n\thttps (Webrtc App) port: ' + HTTPS_PORT);	
 console.log(TAG + 'External service settings: \n\tclient count: ' + options['client-count'] + '\n\tport: ' + options['external-service-port'] + '\n\tclient prefix: ' + options['external-service-client-prefix']);
-console.log(TAG + 'Web app server settings: \n\tport: ' + options['web-app-port'] + '\n\tsecure: ' + options['secure-web-app']);
+console.log(TAG + 'Web app server settings: \n\tport: ' + options['web-app-port'] + '\n\tsecure: ' + options['secure-web-app'] + '\n\tserving contents of: ' + options['web-app-dir']);
 
 // -- Serve html pages over http
 var fileServer = new nodeStatic.Server(options['web-app-dir']);

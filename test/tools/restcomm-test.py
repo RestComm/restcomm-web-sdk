@@ -48,7 +48,7 @@ import selenium.common.exceptions
 
 # Globals
 # Version
-VERSION = "restcomm-test.py 0.3.1"
+VERSION = "restcomm-test.py 0.3.2"
 # TAG for console logs
 TAG = '[restcomm-test] '
 # Keep the nodejs process in a global var so that we can reference it after the tests are over to shut it down
@@ -382,7 +382,8 @@ if testModes & 4:
 			#envDictionary['NSPR_LOG_FILE'] = 'browser#' + str(client['id']) + '.log'
 			envDictionary['NSPR_LOG_FILE'] = 'firefox.log'
 			# not sure why but this is the 'module' name for the web console and '5' to get all levels
-			envDictionary['NSPR_LOG_MODULES'] = 'textrun:5'
+			envDictionary['NSPR_LOG_MODULES'] = 'timestamp,all:3,textrun:5'
+			#envDictionary['NSPR_LOG_MODULES'] = 'timestamp,all:3'
 			envDictionary['DISPLAY'] = args.clientHeadlessDisplay
 			# Firefox
 			cmdList = [ 
