@@ -48,7 +48,7 @@ import selenium.common.exceptions
 
 # Globals
 # Version
-VERSION = "0.3.3"
+VERSION = "0.3.4"
 # TAG for console logs
 TAG = '[restcomm-test] '
 # Keep the nodejs process in a global var so that we can reference it after the tests are over to shut it down
@@ -272,7 +272,6 @@ def commandExists(cmd):
 def processRunning(cmd):
 	output = subprocess.check_output('ps ax'.split())
 	for line in output.splitlines():
-		print '-- LINE: ' + line
 		if re.search('Xvfb', line):
 			return True
 	return False
