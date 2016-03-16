@@ -48,7 +48,7 @@ import selenium.common.exceptions
 
 # Globals
 # Version
-VERSION = "0.3.2"
+VERSION = "0.3.3"
 # TAG for console logs
 TAG = '[restcomm-test] '
 # Keep the nodejs process in a global var so that we can reference it after the tests are over to shut it down
@@ -156,6 +156,7 @@ def provisionPhoneNumber(phoneNumber, externalServiceUrl, accountSid, authToken,
 	cmd = 'curl ' + curlSecureOptionsIfApplicable(restcommUrl) + ' -X POST ' + restBaseUrlFromCounterparts(accountSid, authToken, restcommUrl) + '/IncomingPhoneNumbers.json -d ' + urllib.urlencode(postData)
 	print TAG + cmd 
 	#subprocess.call(cmd.split(), stdout = devnullFile, stderr = devnullFile)
+	# remember this runs the command synchronously
 	subprocess.call(cmd.split())
 
 
@@ -258,6 +259,24 @@ def globalTeardown(dictionary):
 		# Start the unified server script to serve both RCML (REST) and html page for webrtc clients to connect to
 		stopServer()
 
+# Check if a command exists
+def commandExists(cmd):
+	for path in os.environ["PATH"].split(os.pathsep):
+		path = path.strip('"')
+		execFile = os.path.join(path, cmd)
+		if os.path.isfile(execFile) and os.access(execFile, os.X_OK):
+			return True
+	return False
+
+# Check if a process is running
+def processRunning(cmd):
+	output = subprocess.check_output('ps ax'.split())
+	for line in output.splitlines():
+		print '-- LINE: ' + line
+		if re.search('Xvfb', line):
+			return True
+	return False
+
 ## --------------- Main code --------------- ##
 # - 001: Do Restcomm provisioning/unprovisioning
 # - 010: Start HTTP server for external service & web app
@@ -336,6 +355,18 @@ for i in range(1, args.count + 1):
 browserProcess = None
 # if user asked for browsers to be spawned (i.e. testModes = 100 binary)
 if testModes & 4:
+	if args.clientHeadless: 
+		if not commandExists('Xvfb'):
+			# Check if Xvfb exists
+			print 'ERROR: Running in headless mode but Xvfb does not exist'
+			stopServer()
+			sys.exit(1)
+
+		if not processRunning('Xvfb'):
+			print 'ERROR: Running in headless mode but Xvfb is not running'
+			stopServer()
+			sys.exit(1)
+
 	useSelenium = False;
 	if useSelenium:
 		print TAG + 'Spawning ' + str(args.count) + ' tester threads' 
@@ -360,6 +391,8 @@ if testModes & 4:
 			# Set the chrome log file
 			#envDictionary['CHROME_LOG_FILE'] = 'browser#' + str(client['id']) + '.log'
 			envDictionary['CHROME_LOG_FILE'] = 'chrome.log'
+			if args.clientHeadless:
+				envDictionary['DISPLAY'] = args.clientHeadlessDisplay
 			envDictionary['DISPLAY'] = args.clientHeadlessDisplay
 			cmdList = [ 
 				#'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',  
@@ -382,9 +415,10 @@ if testModes & 4:
 			#envDictionary['NSPR_LOG_FILE'] = 'browser#' + str(client['id']) + '.log'
 			envDictionary['NSPR_LOG_FILE'] = 'firefox.log'
 			# not sure why but this is the 'module' name for the web console and '5' to get all levels
-			envDictionary['NSPR_LOG_MODULES'] = 'timestamp,all:3,textrun:5'
+			envDictionary['NSPR_LOG_MODULES'] = 'timestamp,textrun:5'
 			#envDictionary['NSPR_LOG_MODULES'] = 'timestamp,all:3'
-			envDictionary['DISPLAY'] = args.clientHeadlessDisplay
+			if args.clientHeadless:
+				envDictionary['DISPLAY'] = args.clientHeadlessDisplay
 			# Firefox
 			cmdList = [ 
 				browser,
