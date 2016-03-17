@@ -383,6 +383,8 @@ if testModes & 4:
 	else:
 		envDictionary = None
 		cmdList = None
+		# TODO: we could make work both in Linux/Darwin but we need extra handling here
+		#osName = subprocess.check_output(['uname'])
 		if args.clientBrowser == 'chrome':
 			envDictionary = None
 			# Make a copy of the current environment
@@ -392,17 +394,19 @@ if testModes & 4:
 			envDictionary['CHROME_LOG_FILE'] = 'chrome.log'
 			if args.clientHeadless:
 				envDictionary['DISPLAY'] = args.clientHeadlessDisplay
-			envDictionary['DISPLAY'] = args.clientHeadlessDisplay
+
 			cmdList = [ 
-				#'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',  
-				browser,
+				'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',  
+				#browser,
 				#client['url'], 
 				#'--user-data-dir=' + str(client['id']),
 				#'--incognito',
 				#'--new-window',
+				'--no-first-run',
 				'--enable-logging',
 				'--use-fake-ui-for-media-stream',
-				'--process-per-tab',
+				'--use-fake-device-for-media-stream',
+				#'--process-per-tab',
 			]
 
 
@@ -420,7 +424,8 @@ if testModes & 4:
 				envDictionary['DISPLAY'] = args.clientHeadlessDisplay
 			# Firefox
 			cmdList = [ 
-				browser,
+				'/Applications/Firefox.app/Contents/MacOS/firefox-bin',
+				#browser,
 				'--jsconsole',   # without this I'm not getting proper logs for some weird reason
 				#'--args', 
 				#'--new-tab',
@@ -432,7 +437,7 @@ if testModes & 4:
 			cmdList.append(client['url'])
 
 		separator = ' '
-		print TAG + 'Spawning ' + str(len(cmdList)) + ' browsers. Command: ' + separator.join(cmdList)
+		print TAG + 'Spawning ' + str(len(clients)) + ' browsers. Command: ' + separator.join(cmdList)
 		devnullFile = open(os.devnull, 'w')
 		# We want it to run in the background
 		browserProcess = subprocess.Popen(cmdList, env = envDictionary, stdout = devnullFile, stderr = devnullFile)
