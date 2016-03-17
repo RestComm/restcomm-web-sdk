@@ -396,8 +396,8 @@ if testModes & 4:
 				envDictionary['DISPLAY'] = args.clientHeadlessDisplay
 
 			cmdList = [ 
-				'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',  
-				#browser,
+				#'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',  
+				browser,
 				#client['url'], 
 				#'--user-data-dir=' + str(client['id']),
 				#'--incognito',
@@ -424,8 +424,8 @@ if testModes & 4:
 				envDictionary['DISPLAY'] = args.clientHeadlessDisplay
 			# Firefox
 			cmdList = [ 
-				'/Applications/Firefox.app/Contents/MacOS/firefox-bin',
-				#browser,
+				#'/Applications/Firefox.app/Contents/MacOS/firefox-bin',
+				browser,
 				'--jsconsole',   # without this I'm not getting proper logs for some weird reason
 				#'--args', 
 				#'--new-tab',
