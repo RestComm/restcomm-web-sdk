@@ -289,8 +289,8 @@ parser.add_argument('--client-register-ws-url', dest = 'registerWsUrl', default 
 parser.add_argument('--client-register-domain', dest = 'registerDomain', default = '127.0.0.1', help = 'Webrtc clients domain for registering, like \'127.0.0.1\'')
 parser.add_argument('--client-username-prefix', dest = 'usernamePrefix', default = 'user', help = 'User prefix for the clients, like \'user\'')
 parser.add_argument('--client-password', dest = 'password', default = '1234', help = 'Password for the clients, like \'1234\'')
-parser.add_argument('--client-browser', dest = 'clientBrowser', default = 'firefox', help = 'Browser to use for client web app. Currently \'chrome\' and \'firefox\' are supported')
-parser.add_argument('--client-browser-executable', dest = 'clientBrowserExecutable', default = '', help = 'Use a custom executable for the browser. Defaults are \'firefox\' and  \'chromium-browser\' depending on --client-browser')
+#parser.add_argument('--client-browser', dest = 'clientBrowser', default = 'firefox', help = 'Browser to use for client web app. Currently \'chrome\' and \'firefox\' are supported')
+parser.add_argument('--client-browser-executable', dest = 'clientBrowserExecutable', default = 'chromium-browser', help = 'Browser executable for the test. Can be full path (if not in PATH), like \'/Applications/Firefox.app/Contents/MacOS/firefox-bin\', \'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\' (for OSX) or just executable, like \'firefox\', \'chromium-browser\' (for GNU/Linux), default is \'chromium-browser\'')
 parser.add_argument('--client-headless', dest = 'clientHeadless', action = 'store_true', default = False, help = 'Should we use a headless browser?')
 parser.add_argument('--client-headless-x-display', dest = 'clientHeadlessDisplay', default = ':99', help = 'When using headless, which virtual X display to use when setting DISPLAY env variable. Default is \':99\'')
 parser.add_argument('--restcomm-base-url', dest = 'restcommBaseUrl', default = 'http://127.0.0.1:8080', help = 'Restcomm instance base URL, like \'http://127.0.0.1:8080\'')
@@ -303,17 +303,7 @@ parser.add_argument('--version', action = 'version', version = 'restcomm-test.py
 
 args = parser.parse_args()
 
-browser = None
-if args.clientBrowserExecutable == '':
-	if args.clientBrowser == 'chrome':
-		browser = 'chromium-browser';
-	else:
-		browser = 'firefox';
-else:
-	browser = args.clientBrowserExecutable;
-
-
-print TAG + 'Webrtc clients settings: \n\tcount: ' + str(args.count) + '\n\ttarget URL: ' + args.clientUrl + '\n\tregister websocket url: ' + args.registerWsUrl + '\n\tregister domain: ' + args.registerDomain + '\n\tusername prefix: ' + args.usernamePrefix + '\n\tpassword: ' + args.password + '\n\tbrowser: ' + args.clientBrowser + '\n\tbrowser executable: ' + browser + '\n\theadless: ' + str(args.clientHeadless) + '\n\theadless X display: ' + args.clientHeadlessDisplay
+print TAG + 'Webrtc clients settings: \n\tcount: ' + str(args.count) + '\n\ttarget URL: ' + args.clientUrl + '\n\tregister websocket url: ' + args.registerWsUrl + '\n\tregister domain: ' + args.registerDomain + '\n\tusername prefix: ' + args.usernamePrefix + '\n\tpassword: ' + args.password + '\n\tbrowser executable: ' + args.clientBrowserExecutable + '\n\theadless: ' + str(args.clientHeadless) + '\n\theadless X display: ' + args.clientHeadlessDisplay
 print TAG + 'Restcomm instance settings: \n\tbase URL: ' + args.restcommBaseUrl + '\n\taccount sid: ' + args.accountSid + '\n\tauth token: ' + args.authToken + '\n\tphone number: ' + args.phoneNumber + '\n\texternal service URL: ' + args.externalServiceUrl
 print TAG + 'Testing modes: ' + str(args.testModes)
 
@@ -385,7 +375,7 @@ if testModes & 4:
 		cmdList = None
 		# TODO: we could make work both in Linux/Darwin but we need extra handling here
 		#osName = subprocess.check_output(['uname'])
-		if args.clientBrowser == 'chrome':
+		if re.search('chrom', args.clientBrowserExecutable, re.IGNORECASE):
 			envDictionary = None
 			# Make a copy of the current environment
 			envDictionary = dict(os.environ)   
@@ -396,8 +386,7 @@ if testModes & 4:
 				envDictionary['DISPLAY'] = args.clientHeadlessDisplay
 
 			cmdList = [ 
-				#'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',  
-				browser,
+				args.clientBrowserExecutable,
 				#client['url'], 
 				#'--user-data-dir=' + str(client['id']),
 				#'--incognito',
@@ -425,8 +414,7 @@ if testModes & 4:
 				envDictionary['DISPLAY'] = args.clientHeadlessDisplay
 			# Firefox
 			cmdList = [ 
-				#'/Applications/Firefox.app/Contents/MacOS/firefox-bin',
-				browser,
+				args.clientBrowserExecutable,
 				'--jsconsole',   # without this I'm not getting proper logs for some weird reason
 				#'--args', 
 				#'--new-tab',
