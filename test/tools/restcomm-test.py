@@ -402,10 +402,11 @@ if testModes & 4:
 				#'--user-data-dir=' + str(client['id']),
 				#'--incognito',
 				#'--new-window',
-				'--no-first-run',
-				'--enable-logging',
-				'--use-fake-ui-for-media-stream',
-				'--use-fake-device-for-media-stream',
+				'--no-first-run',  # even if it's the first time Chrome is starting up avoid showing the welcome message, which needs user intervention and causes issues on headless environment
+				'--enable-logging',  # enable logging at the specified file
+				'--use-fake-ui-for-media-stream',  # don't require user to grant permission for microphone and camera
+				'--use-fake-device-for-media-stream',  # don't use real microphone and camera for media, but generate fake media
+				'--ignore-certificate-errors',  # don't check server certificate for validity, again to avoid user intervention
 				#'--process-per-tab',
 			]
 
