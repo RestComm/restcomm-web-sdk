@@ -140,6 +140,11 @@
 			currentConnection.disconnect(function(connection) {
 				$("#log").text("Connection ended");
 				remoteMedia.style.display = "none";
+
+				// auto-close the browser tab when the call is finished
+				setTimeout(function() {
+					close();
+				}, 1000);
 			});
 
 			// auto-accept an incoming call to be able to load-test.

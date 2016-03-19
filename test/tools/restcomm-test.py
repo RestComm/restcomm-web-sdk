@@ -276,10 +276,102 @@ def processRunning(cmd):
 			return True
 	return False
 
-## --------------- Main code --------------- ##
-# - 001: Do Restcomm provisioning/unprovisioning
-# - 010: Start HTTP server for external service & web app
-# - 100: Spawn webrtc browsers
+# Spawn 'count' number of browsers starting at 'index' in the 'clients' array
+# Returns the next available clients index
+def spawnBrowsers(browserCommand, clients, index, count):
+	if count > len(clients):
+		print 'Cannot spawn more browsers than the client count'
+		sys.exit(1)
+
+	envDictionary = None
+	cmdList = None
+	# TODO: we could make work both in Linux/Darwin but we need extra handling here
+	#osName = subprocess.check_output(['uname'])
+	if re.search('chrom', browserCommand, re.IGNORECASE):
+		envDictionary = None
+		# Make a copy of the current environment
+		envDictionary = dict(os.environ)   
+		# Set the chrome log file
+		#envDictionary['CHROME_LOG_FILE'] = 'browser#' + str(client['id']) + '.log'
+		envDictionary['CHROME_LOG_FILE'] = 'chrome.log'
+		if args.clientHeadless:
+			envDictionary['DISPLAY'] = args.clientHeadlessDisplay
+
+		cmdList = [ 
+			browserCommand,
+			#client['url'], 
+			#'--user-data-dir=' + str(client['id']),
+			#'--incognito',
+			#'--new-window',
+			'--no-first-run',  # even if it's the first time Chrome is starting up avoid showing the welcome message, which needs user intervention and causes issues on headless environment
+			'--enable-logging',  # enable logging at the specified file
+			'--use-fake-ui-for-media-stream',  # don't require user to grant permission for microphone and camera
+			'--use-fake-device-for-media-stream',  # don't use real microphone and camera for media, but generate fake media
+			'--ignore-certificate-errors',  # don't check server certificate for validity, again to avoid user intervention
+			'--process-per-tab',
+		]
+
+	else:
+		# Make a copy of the current environment
+		envDictionary = None
+		envDictionary = dict(os.environ)   
+		# Set the chrome log file
+		#envDictionary['NSPR_LOG_FILE'] = 'browser#' + str(client['id']) + '.log'
+		envDictionary['NSPR_LOG_FILE'] = 'firefox.log'
+		# not sure why but this is the 'module' name for the web console and '5' to get all levels
+		envDictionary['NSPR_LOG_MODULES'] = 'timestamp,textrun:5'
+		#envDictionary['NSPR_LOG_MODULES'] = 'timestamp,all:3'
+		if args.clientHeadless:
+			envDictionary['DISPLAY'] = args.clientHeadlessDisplay
+		# Firefox
+		cmdList = [ 
+			browserCommand,
+			'--jsconsole',   # without this I'm not getting proper logs for some weird reason
+			#'--args', 
+			#'--new-tab',
+			#client['url'], 
+		]
+
+	#adjustedIndex = 0
+	#for i in range(index, index + count):
+	#	adjustedIndex = i % len(clients)
+	#	print '--- Using adjusted index: ' + str(adjustedIndex)
+	#	cmdList.append(clients[adjustedIndex]['url'])
+	#
+	#adjustedIndex += 1
+	#
+	# add all the links in the command after the options
+	#for client in clients:
+	#	cmdList.append(client['url'])
+
+	#separator = ' '
+	#print TAG + 'Spawning ' + str(count) + ' browsers. Command: ' + separator.join(cmdList)
+	#devnullFile = open(os.devnull, 'w')
+	# We want it to run in the background
+	#browserProcess = subprocess.Popen(cmdList, env = envDictionary, stdout = devnullFile, stderr = devnullFile)
+
+	adjustedIndex = 0
+	for i in range(index, index + count):
+		adjustedIndex = i % len(clients)
+		print '--- Using adjusted index: ' + str(adjustedIndex)
+
+		fullCmdList = list(cmdList);
+		fullCmdList.append(clients[adjustedIndex]['url'])
+
+		separator = ' '
+		devnullFile = open(os.devnull, 'w')
+		# We want it to run in the background
+		clients[adjustedIndex]['process'] = subprocess.Popen(fullCmdList, env = envDictionary, stdout = devnullFile, stderr = devnullFile)
+		print TAG + 'Spawned browser (' + str(clients[adjustedIndex]['process'].pid) + '), command: ' + separator.join(fullCmdList)
+
+	adjustedIndex += 1
+
+	# add all the links in the command after the options
+	#for client in clients:
+	#	cmdList.append(client['url'])
+
+	
+	return adjustedIndex
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--client-count', dest = 'count', default = 10, type = int, help = 'Count of Webrtc clients spawned for the test')
@@ -371,65 +463,21 @@ if testModes & 4:
 		pool.close() 
 		pool.join() 
 	else:
-		envDictionary = None
-		cmdList = None
-		# TODO: we could make work both in Linux/Darwin but we need extra handling here
-		#osName = subprocess.check_output(['uname'])
-		if re.search('chrom', args.clientBrowserExecutable, re.IGNORECASE):
-			envDictionary = None
-			# Make a copy of the current environment
-			envDictionary = dict(os.environ)   
-			# Set the chrome log file
-			#envDictionary['CHROME_LOG_FILE'] = 'browser#' + str(client['id']) + '.log'
-			envDictionary['CHROME_LOG_FILE'] = 'chrome.log'
-			if args.clientHeadless:
-				envDictionary['DISPLAY'] = args.clientHeadlessDisplay
+		nextClientIndex = spawnBrowsers(args.clientBrowserExecutable, clients, 0, args.count)
 
-			cmdList = [ 
-				args.clientBrowserExecutable,
-				#client['url'], 
-				#'--user-data-dir=' + str(client['id']),
-				#'--incognito',
-				#'--new-window',
-				'--no-first-run',  # even if it's the first time Chrome is starting up avoid showing the welcome message, which needs user intervention and causes issues on headless environment
-				'--enable-logging',  # enable logging at the specified file
-				'--use-fake-ui-for-media-stream',  # don't require user to grant permission for microphone and camera
-				'--use-fake-device-for-media-stream',  # don't use real microphone and camera for media, but generate fake media
-				'--ignore-certificate-errors',  # don't check server certificate for validity, again to avoid user intervention
-				#'--process-per-tab',
-			]
-
-
-		else:
-			# Make a copy of the current environment
-			envDictionary = None
-			envDictionary = dict(os.environ)   
-			# Set the chrome log file
-			#envDictionary['NSPR_LOG_FILE'] = 'browser#' + str(client['id']) + '.log'
-			envDictionary['NSPR_LOG_FILE'] = 'firefox.log'
-			# not sure why but this is the 'module' name for the web console and '5' to get all levels
-			envDictionary['NSPR_LOG_MODULES'] = 'timestamp,textrun:5'
-			#envDictionary['NSPR_LOG_MODULES'] = 'timestamp,all:3'
-			if args.clientHeadless:
-				envDictionary['DISPLAY'] = args.clientHeadlessDisplay
-			# Firefox
-			cmdList = [ 
-				args.clientBrowserExecutable,
-				'--jsconsole',   # without this I'm not getting proper logs for some weird reason
-				#'--args', 
-				#'--new-tab',
-				#client['url'], 
-			]
-
-		# add all the links in the command after the options
-		for client in clients:
-			cmdList.append(client['url'])
-
-		separator = ' '
-		print TAG + 'Spawning ' + str(len(clients)) + ' browsers. Command: ' + separator.join(cmdList)
-		devnullFile = open(os.devnull, 'w')
-		# We want it to run in the background
-		browserProcess = subprocess.Popen(cmdList, env = envDictionary, stdout = devnullFile, stderr = devnullFile)
+		currentBrowserCount = None
+		while 1:
+			#cmd = ['pgrep ', args.clientBrowserExecutable]
+			cmd = ['pgrep', 'Chrome']
+			output = subprocess.check_output(cmd)
+			currentBrowserCount = len(output.splitlines())
+			print 'Current browser count: ' + str(currentBrowserCount)
+			print 'Args.count: ' + str(args.count)
+			if currentBrowserCount < args.count:
+				print 'Spawning ' + str(args.count - currentBrowserCount) + ' to cover the closed ones'
+				nextClientIndex = spawnBrowsers(args.clientBrowserExecutable, clients, nextClientIndex, args.count - currentBrowserCount)
+			
+			time.sleep(1)
 
 # raw_input doesn't exist in 3.0 and inputString issues an error in 2.7
 if (sys.version_info < (3, 0)):
@@ -441,7 +489,7 @@ else:
 if testModes & 4:
 	if not useSelenium:
 		print TAG + "Stopping browser"
-		browserProcess.kill()
+		#browserProcess.kill()
 
 globalTeardown({ 
 	'count': args.count, 
