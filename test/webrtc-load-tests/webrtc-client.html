@@ -97,6 +97,10 @@
 		if (!registerDomain) {
 			registerDomain = '127.0.0.1'
 		}
+		var respawnUrl = getParameterByName('respawn-url');
+		if (!respawnUrl) {
+			respawnUrl = 'http://127.0.0.1:10511/respawn-user'
+		}
 		var fakeMedia = getParameterByName('fake-media');
 		if (!fakeMedia) {
 			fakeMedia = false;
@@ -141,10 +145,8 @@
 				$("#log").text("Connection ended");
 				remoteMedia.style.display = "none";
 
-				// auto-close the browser tab when the call is finished
-				setTimeout(function() {
-					close();
-				}, 1000);
+				// After calls is done we want to destroy Device (and see more at Device.offline())
+				RestCommClient.Device.destroy();
 			});
 
 			// auto-accept an incoming call to be able to load-test.
@@ -159,6 +161,26 @@
 
 		RestCommClient.Device.offline(function(device) {
 			$("#log").text("Device is offline");
+
+			// Send AJAX request to test tool saying that this browser if terminating
+			var xmlHttp = new XMLHttpRequest();
+			xmlHttp.onreadystatechange = function() { 
+			  if (xmlHttp.readyState == 4) {
+				  if (xmlHttp.status == 200) {
+						// we got successful response back
+						console.log('Ajax response successful for username: ' + username + ', text: ' + xmlHttp.responseText);
+					}
+					else {
+						console.error('Ajax response failed for username: ' + username + ', text: ' + xmlHttp.responseText);
+					}
+					// close the browser tab when we get a response
+					close();
+				}
+			}
+			uri = respawnUrl + '?username=' + username;
+			console.log('Using Ajax to target URI: ' + uri);
+			xmlHttp.open("GET", encodeURI(uri), true); // true for asynchronous 
+			xmlHttp.send(null);
 		});
 
 		RestCommClient.Device.message(function(parameters) {
