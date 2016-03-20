@@ -3,10 +3,8 @@
 # Load testing Restcomm Media Server
 #
 # Example invocations:
-# - Insecure invocation:
-# $ ./restcomm-test.py --client-count 1 --client-url http://127.0.0.1:10510/webrtc-client.html --client-register-ws-url ws://127.0.0.1:5082 --client-register-domain 127.0.0.1 --client-username-prefix user --client-password 1234 --restcomm-account-sid ACae6e420f425248d6a26948c17a9e2acf --restcomm-auth-token 0d01c95aac798602579fe08fc2461036  --restcomm-base-url http://127.0.0.1:8080 --restcomm-phone-number "+5556" --restcomm-external-service-url http://127.0.0.1:10512/rcml
 # - Secure invocation:
-# $ restcomm-test.py --client-count 1 --client-url https://127.0.0.1:10511/webrtc-client.html --client-register-ws-url wss://54.146.130.52:5083 --client-register-domain 54.146.130.52 --client-username-prefix user --client-password 1234 --restcomm-account-sid ACae6e420f425248d6a26948c17a9e2acf --restcomm-auth-token 0d01c95aac798602579fe08fc2461036  --restcomm-base-url https://54.146.130.52 --restcomm-phone-number "+5556" --restcomm-external-service-url http://127.0.0.1:10512/rcml
+# $ ./restcomm-test.py --client-count 50 --client-url https://192.168.2.3:10510/webrtc-client.html --client-register-ws-url wss://192.168.2.3:5083 --client-register-domain 192.168.2.3 --client-username-prefix user --client-password 1234 --restcomm-account-sid ACae6e420f425248d6a26948c17a9e2acf --restcomm-auth-token 0d01c95aac798602579fe08fc2461036  --restcomm-base-url https://192.168.2.3:8443 --restcomm-phone-number "+5556" --restcomm-external-service-url http://192.168.2.3:10512/rcml --client-browser "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --client-web-app-dir ../webrtc-load-tests/ --client-respawn-url https://192.168.2.3:10511/respawn-user
 #
 # TODOs:
 #
@@ -351,35 +349,33 @@ def spawnBrowsers(browserCommand, clients):
 # Define a handler for the respawn HTTP server
 class httpHandler(BaseHTTPRequestHandler):
 	def do_GET(self):
+		responseText = None
 		if re.search('^/respawn-user.*', self.path) == None:
 			self.send_response(501)
-			self.send_header('Content-type', 'text/html')
-			self.end_headers()
-			self.wfile.write('Not Implemented, please use /respawn-user')
-			return
-
-		# query string for the GET request
-		qsDictionary = None
-		if '?' in self.path:
-			qsDictionary = urlparse.parse_qs(urlparse.urlparse(self.path).query)
+			responseText = 'Not Implemented, please use /respawn-user'
 		else:
-			print '--- Not found ? in request'
-			return
+			self.send_response(200)
+			# query string for the GET request
+			qsDictionary = None
+			if '?' in self.path:
+				qsDictionary = urlparse.parse_qs(urlparse.urlparse(self.path).query)
+			else:
+				print '--- Not found ? in request'
+				return
 
-		print 'Received respawn request: ' + json.dumps(qsDictionary, indent = 3)
+			print 'Received respawn request: ' + json.dumps(qsDictionary, indent = 3)
 
-		responseText = 'Not found client with username: ' + qsDictionary['username'][0]
+			# check which 'client' the request is for
+			for client in clients:
+				if client['id'] == qsDictionary['username'][0]:
+					respawnClients = list()
+					respawnClients.append(client)
+					spawnBrowsers(args.clientBrowserExecutable, respawnClients)
+					responseText = 'Spawning new browser with username: ' + qsDictionary['username'][0]
 
-		# check which 'client' the request is for
-		for client in clients:
-			if client['id'] == qsDictionary['username'][0]:
-				respawnClients = list()
-				respawnClients.append(client)
-				spawnBrowsers(args.clientBrowserExecutable, respawnClients)
-				responseText = 'Spawning new browser with username: ' + qsDictionary['username'][0]
-
-		self.send_response(200)
 		self.send_header('Content-type', 'text/html')
+		# Allow requests from any origin (CORS)
+		self.send_header("Access-Control-Allow-Origin", self.headers.get('Origin'))
 		self.end_headers()
 		self.wfile.write(responseText)
 
@@ -413,11 +409,12 @@ parser.add_argument('--client-register-ws-url', dest = 'registerWsUrl', default 
 parser.add_argument('--client-register-domain', dest = 'registerDomain', default = '127.0.0.1', help = 'Webrtc clients domain for registering, like \'127.0.0.1\'')
 parser.add_argument('--client-username-prefix', dest = 'usernamePrefix', default = 'user', help = 'User prefix for the clients, like \'user\'')
 parser.add_argument('--client-password', dest = 'password', default = '1234', help = 'Password for the clients, like \'1234\'')
-#parser.add_argument('--client-browser', dest = 'clientBrowser', default = 'firefox', help = 'Browser to use for client web app. Currently \'chrome\' and \'firefox\' are supported')
 parser.add_argument('--client-browser-executable', dest = 'clientBrowserExecutable', default = 'chromium-browser', help = 'Browser executable for the test. Can be full path (if not in PATH), like \'/Applications/Firefox.app/Contents/MacOS/firefox-bin\', \'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\' (for OSX) or just executable, like \'firefox\', \'chromium-browser\' (for GNU/Linux), default is \'chromium-browser\'')
 parser.add_argument('--client-headless', dest = 'clientHeadless', action = 'store_true', default = False, help = 'Should we use a headless browser?')
 parser.add_argument('--client-respawn-url', dest = 'respawnUrl', default = 'http://127.0.0.1:10511/respawn-user', help = 'Webrtc clients respawn URL to be notified when the call is over, like \'http://127.0.0.1:10511/respawn-user\'')
 parser.add_argument('--client-headless-x-display', dest = 'clientHeadlessDisplay', default = ':99', help = 'When using headless, which virtual X display to use when setting DISPLAY env variable. Default is \':99\'')
+parser.add_argument('--client-role', dest = 'clientRole', default = 'passive', help = 'Role for the client. When \'active\' it makes a call to \'--target-sip-uri\'. When \'passive\' it waits for incoming call. Default is \'passive\'')
+parser.add_argument('--client-target-sip-uri', dest = 'clientTargetSipUri', default = '+1234@127.0.0.1', help = 'Client target SIP URI when \'--client-role\' is \'active\'. Default is \'+1234@127.0.0.1\'')
 parser.add_argument('--restcomm-base-url', dest = 'restcommBaseUrl', default = 'http://127.0.0.1:8080', help = 'Restcomm instance base URL, like \'http://127.0.0.1:8080\'')
 parser.add_argument('--restcomm-account-sid', dest = 'accountSid', required = True, help = 'Restcomm accound Sid, like \'ACae6e420f425248d6a26948c17a9e2acf\'')
 parser.add_argument('--restcomm-auth-token', dest = 'authToken', required = True, help = 'Restcomm auth token, like \'0a01c34aac72a432579fe08fc2461036\'')
@@ -428,7 +425,7 @@ parser.add_argument('--version', action = 'version', version = 'restcomm-test.py
 
 args = parser.parse_args()
 
-print TAG + 'Webrtc clients settings: \n\tcount: ' + str(args.count) + '\n\ttarget URL: ' + args.clientUrl + '\n\tregister websocket url: ' + args.registerWsUrl + '\n\tregister domain: ' + args.registerDomain + '\n\tusername prefix: ' + args.usernamePrefix + '\n\tpassword: ' + args.password + '\n\tbrowser executable: ' + args.clientBrowserExecutable + '\n\theadless: ' + str(args.clientHeadless) + '\n\theadless X display: ' + args.clientHeadlessDisplay + '\n\trespawn url: ' + args.respawnUrl
+print TAG + 'Webrtc clients settings: \n\tcount: ' + str(args.count) + '\n\ttarget URL: ' + args.clientUrl + '\n\tregister websocket url: ' + args.registerWsUrl + '\n\tregister domain: ' + args.registerDomain + '\n\tusername prefix: ' + args.usernamePrefix + '\n\tpassword: ' + args.password + '\n\tbrowser executable: ' + args.clientBrowserExecutable + '\n\theadless: ' + str(args.clientHeadless) + '\n\theadless X display: ' + args.clientHeadlessDisplay + '\n\trespawn url: ' + args.respawnUrl + '\n\tclient role: ' + args.clientRole + '\n\tclient target SIP URI: ' + args.clientTargetSipUri
 print TAG + 'Restcomm instance settings: \n\tbase URL: ' + args.restcommBaseUrl + '\n\taccount sid: ' + args.accountSid + '\n\tauth token: ' + args.authToken + '\n\tphone number: ' + args.phoneNumber + '\n\texternal service URL: ' + args.externalServiceUrl
 print TAG + 'Testing modes: ' + str(args.testModes)
 
@@ -461,6 +458,8 @@ for i in range(1, args.count + 1):
 		'register-domain': args.registerDomain,
 		'respawn-url': args.respawnUrl,
 		'fake-media': str(args.clientHeadless).lower(),
+		'role': args.clientRole,
+		'call-destination': args.clientTargetSipUri,
 	}
 	clients.append({ 
 		'id': GETData['username'], 
