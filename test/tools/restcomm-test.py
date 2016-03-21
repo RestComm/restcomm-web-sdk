@@ -68,6 +68,8 @@ args = None
 clients = None
 # number of browsers spawned so far
 totalBrowserCount = 0
+# log index
+logIndex = 0
 
 def threadFunction(dictionary): 
 	try:
@@ -287,6 +289,7 @@ def spawnBrowsers(browserCommand, clients):
 	envDictionary = None
 	cmdList = None
 	global totalBrowserCount
+	global logIndex
 	totalBrowserCount += len(clients)
 
 	# TODO: we could make work both in Linux/Darwin but we need extra handling here
@@ -297,22 +300,24 @@ def spawnBrowsers(browserCommand, clients):
 		envDictionary = dict(os.environ)   
 		# Set the chrome log file
 		#envDictionary['CHROME_LOG_FILE'] = 'browser#' + str(client['id']) + '.log'
-		envDictionary['CHROME_LOG_FILE'] = 'chrome.log.' + str(datetime.datetime.utcnow()).replace(' ', '.')
+		#envDictionary['CHROME_LOG_FILE'] = 'chrome.log.' + str(datetime.datetime.utcnow()).replace(' ', '.')
+		envDictionary['CHROME_LOG_FILE'] = 'chrome.log.' + str(logIndex)
+		logIndex += 1
 		if args.clientHeadless:
 			envDictionary['DISPLAY'] = args.clientHeadlessDisplay
 
 		cmdList = [ 
 			browserCommand,
-			#client['url'], 
 			#'--user-data-dir=' + str(client['id']),
 			#'--incognito',
 			#'--new-window',
 			'--no-first-run',  # even if it's the first time Chrome is starting up avoid showing the welcome message, which needs user intervention and causes issues on headless environment
 			'--enable-logging',  # enable logging at the specified file
+			#'--vmodule=webrtc-client*',  # not tested
 			'--use-fake-ui-for-media-stream',  # don't require user to grant permission for microphone and camera
 			'--use-fake-device-for-media-stream',  # don't use real microphone and camera for media, but generate fake media
 			'--ignore-certificate-errors',  # don't check server certificate for validity, again to avoid user intervention
-			#'--process-per-tab',
+			#'--process-per-tab',  # not tested
 		]
 
 	else:
