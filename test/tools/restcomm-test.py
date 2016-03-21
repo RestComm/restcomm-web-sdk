@@ -459,8 +459,10 @@ for i in range(1, args.count + 1):
 		'respawn-url': args.respawnUrl,
 		'fake-media': str(args.clientHeadless).lower(),
 		'role': args.clientRole,
-		'call-destination': args.clientTargetSipUri,
 	}
+	if args.clientRole == 'active':
+		GETData['call-destination'] = args.clientTargetSipUri;
+	
 	clients.append({ 
 		'id': GETData['username'], 
 		'url' : args.clientUrl + '?' + urllib.urlencode(GETData)

@@ -47,6 +47,35 @@
 			 if (!results[2]) return '';
 			 return decodeURIComponent(results[2].replace(/\+/g, " "));
 		}
+		/*
+		function addZero(i) {
+		    if (i < 10) {
+			i = "0" + i;
+		    }
+		    return i;
+		}
+		function addZeroes(i) {
+		    if (i < 10) {
+			i = "00" + i;
+			return i;
+		    }
+		    if (i < 100) {
+			i = "0" + i;
+			return i;
+		    }
+		    return i;
+		}
+		*/
+		function clientLog(msg) {
+			//var timestamp = new Date();
+			//var timestampString = addZero(timestamp.getHours()) + ':' + addZero(timestamp.getMinutes()) + ':' + addZero(timestamp.getSeconds()) + '.' + addZeroes(timestamp.getMilliseconds());
+			console.log('webrtc-client.html' + ', [user: ' + username + '] ' + msg);
+		}
+		function clientError(msg) {
+			var timestamp = new Date();
+			var timestampString = addZero(timestamp.getHours()) + ':' + addZero(timestamp.getMinutes()) + ':' + addZero(timestamp.getSeconds()) + '.' + addZeroes(timestamp.getMilliseconds());
+			console.error('webrtc-client.html' + ', [user: ' + username + '] ' + msg);
+		}
 
 		var useVideo = false;
 		var localMedia = document.getElementById("localMedia");
@@ -149,9 +178,11 @@
 			parameters['domain'] = registerDomain;
 		}
 
+		//clientLog('Device.setup(): ' + JSON.stringify(parameters));
 		RestCommClient.Device.setup(parameters);
 
 		RestCommClient.Device.ready(function(device) {
+			clientLog('Device is ready');
 			$("#log").text("Ready");
 			if (role == 'active') {
 				// when our role is active auto-call
@@ -163,15 +194,18 @@
 		});
 
 		RestCommClient.Device.error(function(error) {
+			clientError('Device error');
 			$("#log").text("Error: " + error.message);
 		});
 
 		RestCommClient.Device.connect(function(connection) {
+			clientLog('Connection connected, '+ JSON.stringify(connection.parameters));
 			$("#log").text("Successfully established call");
 			remoteMedia.style.display = "block";
 		});
 
 		RestCommClient.Device.incoming(function(connection) {
+			clientLog('Call arrived, ' + JSON.stringify(connection.parameters));
 			$("#log").text("Incoming call from " + connection.parameters.From);
 			currentConnection = connection;
 			currentConnection.disconnect(function(connection) {
@@ -193,10 +227,12 @@
 		});
 
 		RestCommClient.Device.cancel(function(connection) {
+			clientLog('Call canceled' + JSON.stringify(connection.parameters));
 			$("#log").text("Incoming call is canceled");
 		});
 
 		RestCommClient.Device.offline(function(device) {
+			clientLog('Device is offline');  // + JSON.stringify(device));
 			$("#log").text("Device is offline");
 
 			if (closeOnEnd) {
@@ -206,17 +242,18 @@
 				  if (xmlHttp.readyState == 4) {
 					  if (xmlHttp.status == 200) {
 							// we got successful response back
-							console.log('Ajax response successful for username: ' + username + ', text: ' + xmlHttp.responseText);
+							clientLog('Ajax response successful for username: ' + username + ', text: ' + xmlHttp.responseText);
 						}
 						else {
-							console.error('Ajax response failed for username: ' + username + ', text: ' + xmlHttp.responseText);
+							clientError('Ajax response failed for username: ' + username + ', text: ' + xmlHttp.responseText);
 						}
 						// close the browser tab when we get a response
+						clientLog('Closing browser window');
 						close();
 					}
 				}
 				uri = respawnUrl + '?username=' + username;
-				console.log('Using Ajax to target URI: ' + uri);
+				clientLog('Using Ajax to target URI: ' + uri);
 				xmlHttp.open("GET", encodeURI(uri), true); // true for asynchronous 
 				xmlHttp.send(null);
 			}
@@ -227,6 +264,7 @@
 		});
 
 		RestCommClient.Device.disconnect(function(connection) {
+			clientLog('Device is disconnected');
 		});
 
 		function call(destination) {
@@ -237,10 +275,11 @@
 				'remote-media': remoteMedia,
 				'fake-media': fakeMedia,
 			};
-			//console.log('Device.connectt() params: ' + JSON.stringify(parameters));
+			clientLog('Connecting with params: ' + JSON.stringify(parameters));
 			currentConnection = RestCommClient.Device.connect(parameters);
 
 			currentConnection.disconnect(function(connection) {
+				clientLog('Connection disconnected: ' + JSON.stringify(connection.parameters));
 				$("#log").text("Connection ended");
 				remoteMedia.style.display = "none";
 
@@ -251,6 +290,7 @@
 			});
 
 			currentConnection.error(function(error) {
+				clientError('Connection error: ' + JSON.stringify(error));
 				$("#log").text("Connection error: " + error);
 			});
 
@@ -269,7 +309,7 @@
 				'remote-media': remoteMedia,
 				'fake-media': fakeMedia,
 			};
-			//console.log('Connection.accept() params: ' + JSON.stringify(parameters));
+			//clientLog('Accepting connection: ' + JSON.stringify(parameters));
 			currentConnection.accept(parameters);
 		}
 
@@ -287,8 +327,8 @@
 
 		function hangup() {
 			RestCommClient.Device.disconnectAll();
-				$("#log").text("Connection ended");
-				remoteMedia.style.display = "none";
+			$("#log").text("Connection ended");
+			remoteMedia.style.display = "none";
 		}
 
 		function destroy() {
