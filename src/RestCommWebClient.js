@@ -84,7 +84,7 @@ function WrtcEventListener(device)
 WrtcEventListener.prototype.onWebRTCommClientOpenedEvent = function() 
 {
 	if (this.device.debugEnabled) {
-	   console.log("WrtcEventListener::onWebRTCommClientOpenedEvent");
+	   console.log("Device.onReady()");
 	}
 
 	this.device.status = 'ready';
@@ -95,7 +95,7 @@ WrtcEventListener.prototype.onWebRTCommClientOpenedEvent = function()
 WrtcEventListener.prototype.onWebRTCommClientOpenErrorEvent = function(error) 
 {
 	if (this.device.debugEnabled) {
-   	console.log("WrtcEventListener::onWebRTCommClientOpenErrorEvent" + error);
+   	console.log("Device.onError(), " + error);
 	}
 
 	this.device.onError("Error setting up Device" + error);
@@ -105,7 +105,7 @@ WrtcEventListener.prototype.onWebRTCommClientOpenErrorEvent = function(error)
 WrtcEventListener.prototype.onWebRTCommClientClosedEvent = function() 
 {
 	if (this.device.debugEnabled) {
-		console.log("WrtcEventListener::onWebRTCommClientClosedEvent");
+		console.log("Device.onOffline()");
 	}
 
 	// notify the listener that the device is shutting down
@@ -115,7 +115,7 @@ WrtcEventListener.prototype.onWebRTCommClientClosedEvent = function()
 WrtcEventListener.prototype.onGetUserMediaErrorEventHandler = function(error) 
 {
 	if (this.device.debugEnabled) {
-		console.debug('WrtcEventListener::onGetUserMediaErrorEventHandler(): error=' + error);
+		console.debug('Device.onError(), ' + error);
 	}
 
 	this.device.onError("Media error: " + error);
@@ -126,10 +126,6 @@ WrtcEventListener.prototype.onGetUserMediaErrorEventHandler = function(error)
 // Ringing for incoming calls 
 WrtcEventListener.prototype.onWebRTCommCallRingingEvent = function(webRTCommCall) 
 {
-	if (this.device.debugEnabled) {
-		console.log("WrtcEventListener::onWebRTCommCallRingingEvent");
-	}
-
 	if (webRTCommCall.incomingCallFlag == true) {
 		// update connection status and notify Connection and Device listener (notice that both Device and Connection define listeners for disconnect event)
 		this.device.connection = new Connection(this.device, 'pending');
@@ -147,6 +143,10 @@ WrtcEventListener.prototype.onWebRTCommCallRingingEvent = function(webRTCommCall
 				that.device.onIncoming(that.device.connection);
 				}, 1);
 */
+		if (this.device.debugEnabled) {
+			console.log('Device.onIncoming(), ' + this.device.connection.parameters);
+		}
+
 		this.device.onIncoming(this.device.connection);
 		if (this.device.sounds.incomingEnabled) {
 			this.device.sounds.audioRinging.play();
@@ -181,7 +181,7 @@ WrtcEventListener.prototype.onWebRTCommCallRingingBackEvent = function(webRTComm
 WrtcEventListener.prototype.onWebRTCommCallOpenErrorEvent = function(webRTCommCall, error) 
 {
 	if (this.device.debugEnabled) {
-		console.log("WrtcEventListener::onWebRTCommCallOpenErrorEvent");
+		console.log("Connection.onError(), " + error);
 	}
 
 	if (this.device.connection) {
@@ -191,13 +191,14 @@ WrtcEventListener.prototype.onWebRTCommCallOpenErrorEvent = function(webRTCommCa
 
 WrtcEventListener.prototype.onWebRTCommCallClosedEvent = function(webRTCommCall) 
 {
-	if (this.device.debugEnabled) {
-		console.log("WrtcEventListener::onWebRTCommCallClosedEvent");
-	}
-
 	// update device & connection status and notify Connection and Device listener (notice that both Device and Connection define listeners for disconnect event)
 	this.device.status = 'ready';
 	this.device.connection.status = 'closed';
+
+	if (this.device.debugEnabled) {
+		console.log("Connection.onDisconnect(), " + this.device.connection.parameters);
+	}
+
 	this.device.connection.onDisconnect(this.device.connection);
 	if (this.device.onDisconnect != null) {
 		this.device.onDisconnect(this.device.connection);
@@ -206,10 +207,6 @@ WrtcEventListener.prototype.onWebRTCommCallClosedEvent = function(webRTCommCall)
 
 WrtcEventListener.prototype.onWebRTCommCallOpenedEvent = function(webRTCommCall) 
 {
-	if (this.device.debugEnabled) {
-		console.log("WrtcEventListener::onWebRTCommCallOpenedEvent: received remote stream");
-	}
-
 	//currentCall = webRTCommCall;
 	this.device.connection.webrtcommCall = webRTCommCall;
 
@@ -227,6 +224,11 @@ WrtcEventListener.prototype.onWebRTCommCallOpenedEvent = function(webRTCommCall)
 
 	// update connection status and notify connection listener
 	this.device.connection.status = 'open';
+
+	if (this.device.debugEnabled) {
+		console.log("Device.onConnect" + this.device.connection);
+	}
+
 	this.device.onConnect(this.device.connection);
 
 	inCall = true; 
@@ -235,7 +237,7 @@ WrtcEventListener.prototype.onWebRTCommCallOpenedEvent = function(webRTCommCall)
 WrtcEventListener.prototype.onWebRTCommCallCanceledEvent = function(webRTCommCall) 
 {
 	if (this.device.debugEnabled) {
-		console.log("WrtcEventListener::onWebRTCommCallCanceledEvent");
+		console.log("Device.onCancel(), " + this.device.connection);
 	}
 
 	this.device.sounds.audioRinging.pause();
@@ -251,16 +253,13 @@ WrtcEventListener.prototype.onWebRTCommCallHangupEvent = function(webRTCommCall)
 
 	this.device.connection.webrtcommCall = undefined;
 	//currentCall = undefined;
+	// TODO: don't we need to inform Connection?
 };
 
 // Message related events
 
 // Message arrived
 WrtcEventListener.prototype.onWebRTCommMessageReceivedEvent = function(message) {
-	if (this.device.debugEnabled) {
-		console.log("WrtcEventListener::onWebRTCommMessageReceivedEvent");
-	}
-
 	if (this.device.sounds.outgoingEnabled) {
 		this.device.sounds.audioMessage.play();
 	}
@@ -270,18 +269,22 @@ WrtcEventListener.prototype.onWebRTCommMessageReceivedEvent = function(message) 
 		'Text': message.text,
 	};
 
+	if (this.device.debugEnabled) {
+		console.log("Device.onMessage(), " + JSON.stringify(parameters));
+	}
+
 	this.device.onMessage(parameters);
 };
 
 WrtcEventListener.prototype.onWebRTCommMessageSentEvent = function(message) {
 	if (this.device.debugEnabled) {
-		console.log("WrtcEventListener::onWebRTCommMessageSentEvent");
+		console.log("Device: message sent, " + message);
 	}
 };
 
 WrtcEventListener.prototype.onWebRTCommMessageSendErrorEvent = function(message, error) {
 	if (this.device.debugEnabled) {
-		console.log("WrtcEventListener::onWebRTCommMessageSendErrorEvent");
+		console.log("Device.onError(): error sending message, " + error);
 	}
 
 	this.device.onError("Error sending text message: " + error);
