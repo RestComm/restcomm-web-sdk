@@ -13,7 +13,7 @@
 	<script type="text/javascript" src='scripts/adapter.js'></script>
 	<script type="text/javascript" src='scripts/jain-sip.js'></script>
 	<script type="text/javascript" src='scripts/WebRTComm.js'></script>
-	<script type="text/javascript" src='scripts/RestCommWebClient.js'></script>
+	<script type="text/javascript" src='scripts/restcomm-web-client.js'></script>
 	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 </head>
 <body>
@@ -69,12 +69,10 @@
 		function clientLog(msg) {
 			//var timestamp = new Date();
 			//var timestampString = addZero(timestamp.getHours()) + ':' + addZero(timestamp.getMinutes()) + ':' + addZero(timestamp.getSeconds()) + '.' + addZeroes(timestamp.getMilliseconds());
-			console.log('webrtc-client.html' + ', [user: ' + username + '] ' + msg);
+			console.log('webrtc-client.html(log)' + ', [user: ' + username + '] ' + msg);
 		}
 		function clientError(msg) {
-			var timestamp = new Date();
-			var timestampString = addZero(timestamp.getHours()) + ':' + addZero(timestamp.getMinutes()) + ':' + addZero(timestamp.getSeconds()) + '.' + addZeroes(timestamp.getMilliseconds());
-			console.error('webrtc-client.html' + ', [user: ' + username + '] ' + msg);
+			console.error('webrtc-client.html(error)' + ', [user: ' + username + '] ' + msg);
 		}
 
 		var useVideo = false;
@@ -194,7 +192,7 @@
 		});
 
 		RestCommClient.Device.error(function(error) {
-			clientError('Device error');
+			clientError('Device error' + error);
 			$("#log").text("Error: " + error.message);
 		});
 
