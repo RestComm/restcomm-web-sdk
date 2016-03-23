@@ -28,6 +28,7 @@ import signal
 import datetime
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from socket import *
+from threading import Thread
 
 # Notice that we are using the dummy module which is implemented with threads,
 # not multiple processes, as processes might be overkill in our situation (in
@@ -285,12 +286,12 @@ def processRunning(cmd):
 	return False
 
 # Spawn browsers for all 'clients'
-def spawnBrowsers(browserCommand, clients):
+def spawnBrowsers(browserCommand, clients, totalBrowserCount, logIndex, headless, display, threaded):
 	envDictionary = None
 	cmdList = None
-	global totalBrowserCount
-	global logIndex
-	totalBrowserCount += len(clients)
+	#global totalBrowserCount
+	#global logIndex
+	#totalBrowserCount += len(clients)
 
 	# TODO: we could make work both in Linux/Darwin but we need extra handling here
 	#osName = subprocess.check_output(['uname'])
@@ -302,9 +303,9 @@ def spawnBrowsers(browserCommand, clients):
 		#envDictionary['CHROME_LOG_FILE'] = 'browser#' + str(client['id']) + '.log'
 		#envDictionary['CHROME_LOG_FILE'] = 'chrome.log.' + str(datetime.datetime.utcnow()).replace(' ', '.')
 		envDictionary['CHROME_LOG_FILE'] = 'chrome.log.' + str(logIndex)
-		logIndex += 1
-		if args.clientHeadless:
-			envDictionary['DISPLAY'] = args.clientHeadlessDisplay
+		#logIndex += 1
+		if headless:
+			envDictionary['DISPLAY'] = display
 
 		cmdList = [ 
 			browserCommand,
@@ -330,8 +331,8 @@ def spawnBrowsers(browserCommand, clients):
 		# not sure why but this is the 'module' name for the web console and '5' to get all levels
 		envDictionary['NSPR_LOG_MODULES'] = 'timestamp,textrun:5'
 		#envDictionary['NSPR_LOG_MODULES'] = 'timestamp,all:3'
-		if args.clientHeadless:
-			envDictionary['DISPLAY'] = args.clientHeadlessDisplay
+		if headless:
+			envDictionary['DISPLAY'] = display
 		# Firefox
 		cmdList = [ 
 			browserCommand,
@@ -349,7 +350,10 @@ def spawnBrowsers(browserCommand, clients):
 	print TAG + 'Spawning ' + str(len(clients)) + ' browsers (total: ' + str(totalBrowserCount) + '). Command: ' + separator.join(cmdList)
 	devnullFile = open(os.devnull, 'w')
 	# We want it to run in the background
-	browserProcess = subprocess.Popen(cmdList, env = envDictionary, stdout = devnullFile, stderr = devnullFile)
+	if threaded:
+		subprocess.Popen(cmdList, env = envDictionary, stdout = devnullFile, stderr = devnullFile)
+	else:
+		browserProcess = subprocess.Popen(cmdList, env = envDictionary, stdout = devnullFile, stderr = devnullFile)
 
 # Define a handler for the respawn HTTP server
 class httpHandler(BaseHTTPRequestHandler):
@@ -370,12 +374,18 @@ class httpHandler(BaseHTTPRequestHandler):
 
 			print 'Received respawn request: ' + json.dumps(qsDictionary, indent = 3)
 
+			global totalBrowserCount
+			global logIndex
 			# check which 'client' the request is for
 			for client in clients:
 				if client['id'] == qsDictionary['username'][0]:
 					respawnClients = list()
 					respawnClients.append(client)
-					spawnBrowsers(args.clientBrowserExecutable, respawnClients)
+					totalBrowserCount += len(respawnClients)
+					spawnBrowserThread = Thread(target = spawnBrowsers, args = (args.clientBrowserExecutable, respawnClients, totalBrowserCount, logIndex, args.clientHeadless, args.clientHeadlessDisplay, False))
+					spawnBrowserThread.start()
+					logIndex += 1
+					#spawnBrowsers(args.clientBrowserExecutable, respawnClients, totalBrowserCount, logIndex, args.clientHeadless, args.clientHeadlessDisplay, True)
 					responseText = 'Spawning new browser with username: ' + qsDictionary['username'][0]
 
 		self.send_header('Content-type', 'text/html')
@@ -402,6 +412,13 @@ def startRespawnServer(respawnUrl):
 	if respawnParsedUrl.scheme == 'https':
 		httpd.socket = ssl.wrap_socket(httpd.socket, keyfile='cert/key.pem', certfile='cert/cert.pem', server_side=True)
 	httpd.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+
+	size = httpd.socket.getsockopt(SOL_SOCKET, SO_RCVBUF)
+	print 'Socket recv buffer size: ' + str(size)
+	httpd.socket.setsockopt(SOL_SOCKET, SO_RCVBUF, size * 4)
+	newSize = httpd.socket.getsockopt(SOL_SOCKET, SO_RCVBUF)
+	print 'Socket recv buffer size after set: ' + str(newSize)
+
 	httpd.serve_forever()
 
 
@@ -416,6 +433,7 @@ parser.add_argument('--client-username-prefix', dest = 'usernamePrefix', default
 parser.add_argument('--client-password', dest = 'password', default = '1234', help = 'Password for the clients, like \'1234\'')
 parser.add_argument('--client-browser-executable', dest = 'clientBrowserExecutable', default = 'chromium-browser', help = 'Browser executable for the test. Can be full path (if not in PATH), like \'/Applications/Firefox.app/Contents/MacOS/firefox-bin\', \'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\' (for OSX) or just executable, like \'firefox\', \'chromium-browser\' (for GNU/Linux), default is \'chromium-browser\'')
 parser.add_argument('--client-headless', dest = 'clientHeadless', action = 'store_true', default = False, help = 'Should we use a headless browser?')
+parser.add_argument('--client-respawn', dest = 'respawn', action = 'store_true', default = False, help = 'Should we use respawn browser logic? This means a. starting an http server to listen for respawn requests (see --client-respawn-url) and b. tell the clients to close the tabs after done with the call scenario')
 parser.add_argument('--client-respawn-url', dest = 'respawnUrl', default = 'http://127.0.0.1:10511/respawn-user', help = 'Webrtc clients respawn URL to be notified when the call is over, like \'http://127.0.0.1:10511/respawn-user\'')
 parser.add_argument('--client-headless-x-display', dest = 'clientHeadlessDisplay', default = ':99', help = 'When using headless, which virtual X display to use when setting DISPLAY env variable. Default is \':99\'')
 parser.add_argument('--client-role', dest = 'clientRole', default = 'passive', help = 'Role for the client. When \'active\' it makes a call to \'--target-sip-uri\'. When \'passive\' it waits for incoming call. Default is \'passive\'')
@@ -430,7 +448,7 @@ parser.add_argument('--version', action = 'version', version = 'restcomm-test.py
 
 args = parser.parse_args()
 
-print TAG + 'Webrtc clients settings: \n\tcount: ' + str(args.count) + '\n\ttarget URL: ' + args.clientUrl + '\n\tregister websocket url: ' + args.registerWsUrl + '\n\tregister domain: ' + args.registerDomain + '\n\tusername prefix: ' + args.usernamePrefix + '\n\tpassword: ' + args.password + '\n\tbrowser executable: ' + args.clientBrowserExecutable + '\n\theadless: ' + str(args.clientHeadless) + '\n\theadless X display: ' + args.clientHeadlessDisplay + '\n\trespawn url: ' + args.respawnUrl + '\n\tclient role: ' + args.clientRole + '\n\tclient target SIP URI: ' + args.clientTargetSipUri
+print TAG + 'Webrtc clients settings: \n\tcount: ' + str(args.count) + '\n\ttarget URL: ' + args.clientUrl + '\n\tregister websocket url: ' + args.registerWsUrl + '\n\tregister domain: ' + args.registerDomain + '\n\tusername prefix: ' + args.usernamePrefix + '\n\tpassword: ' + args.password + '\n\tbrowser executable: ' + args.clientBrowserExecutable + '\n\theadless: ' + str(args.clientHeadless) + '\n\theadless X display: ' + args.clientHeadlessDisplay + '\n\trespawn client browsers: ' + str(args.respawn) + '\n\trespawn url: ' + args.respawnUrl + '\n\tclient role: ' + args.clientRole + '\n\tclient target SIP URI: ' + args.clientTargetSipUri
 print TAG + 'Restcomm instance settings: \n\tbase URL: ' + args.restcommBaseUrl + '\n\taccount sid: ' + args.accountSid + '\n\tauth token: ' + args.authToken + '\n\tphone number: ' + args.phoneNumber + '\n\texternal service URL: ' + args.externalServiceUrl
 print TAG + 'Testing modes: ' + str(args.testModes)
 
@@ -461,10 +479,12 @@ for i in range(1, args.count + 1):
 		'password': args.password,
 		'register-ws-url': args.registerWsUrl,
 		'register-domain': args.registerDomain,
-		'respawn-url': args.respawnUrl,
 		'fake-media': str(args.clientHeadless).lower(),
 		'role': args.clientRole,
 	}
+	if args.respawn:
+		GETData['respawn-url'] = args.respawnUrl;
+		GETData['close-on-end'] = 'true';
 	if args.clientRole == 'active':
 		GETData['call-destination'] = args.clientTargetSipUri;
 	
@@ -504,10 +524,16 @@ if testModes & 4:
 		pool.join() 
 	else:
 		# No selenium, spawn browsers manually (seems to scale better than selenium)
-		spawnBrowsers(args.clientBrowserExecutable, clients)
+		#global totalBrowserCount
+		#global logIndex
+		# check which 'client' the request is for
+		totalBrowserCount += len(clients)
+		spawnBrowsers(args.clientBrowserExecutable, clients, totalBrowserCount, logIndex, args.clientHeadless, args.clientHeadlessDisplay, False)
+		logIndex += 1
 
 		# Start the respawn server which monitors if browsers are closing after handling call scenario and creates new in their place so that load testing can carry on
-		startRespawnServer(args.respawnUrl)
+		if args.respawn:
+			startRespawnServer(args.respawnUrl)
 
 		print TAG + 'Please start call scenarios. Press Ctrl-C to stop ...'
 
