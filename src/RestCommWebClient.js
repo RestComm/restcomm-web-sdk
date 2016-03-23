@@ -761,7 +761,7 @@ var RestCommClient = {
 		 * <b>debug</b> : Enable debug logging in browser console <br>
 		 */
 		setup: function(parameters) {
-			if (parameters['debug'] && parameters['debug'] == true) {
+			if ('debug' in parameters && parameters['debug'] == true) {
 				this.debugEnabled = true;
 			}
 
@@ -770,16 +770,20 @@ var RestCommClient = {
 			}
 
 			// if parameters.registrar is either unset or empty we should function is registrar-less mode
-			var register = false;
-			if (parameters['registrar'] && parameters['registrar'] != "") {
-				register = true;
+			//if (parameters['registrar'] && parameters['registrar'] != "") {
+			// let's default to register until https://github.com/Mobicents/webrtcomm/issues/24 is fixed
+			var register = true;
+			if ('register' in parameters && parameters['register'] == false) {
+				register = false;
 			}
 
 			// Once https://github.com/Mobicents/webrtcomm/issues/24 is fixed we can remove these lines and pass down registrar and domain to webrtcomm
 			if (!parameters['registrar'] || parameters['registrar'] == "") {
+				console.log("Device::setup(): registrar has not been provided. Defaulting to wss://cloud.restcomm.com:5063");
 				parameters['registrar'] = 'wss://cloud.restcomm.com:5063';
 			}
 			if (!parameters['domain'] || parameters['domain'] == "") {
+				console.log("Device::setup(): domain has not been provided. Defaulting to cloud.restcomm.com");
 				parameters['domain'] = 'cloud.restcomm.com';
 			}
 

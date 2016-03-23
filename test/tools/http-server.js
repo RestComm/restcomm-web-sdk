@@ -30,6 +30,7 @@ var cli = commandLineArgs([
   { name: 'web-app-port', alias: 'w', type: Number, defaultValue: 10510 },
   { name: 'web-app-dir', alias: 'd', type: String, defaultValue: '.' },
   { name: 'secure-web-app', alias: 's', type: Boolean, defaultValue: false },
+  { name: 'client-role', alias: 'r', type: String, defaultValue: 'passive' },
   { name: 'help', alias: 'h' },
 ]);
 
@@ -59,7 +60,7 @@ if (process.argv[5]) {
 */
 
 //console.log('[server.js] Initializing http(s) server with ' + options[' + ' clients: \n\tRCML (REST) port: ' + RCML_PORT + ' \n\thttp (Webrtc App) port: ' + HTTP_PORT + ' \n\thttps (Webrtc App) port: ' + HTTPS_PORT);	
-console.log(TAG + 'External service settings: \n\tclient count: ' + options['client-count'] + '\n\tport: ' + options['external-service-port'] + '\n\tclient prefix: ' + options['external-service-client-prefix']);
+console.log(TAG + 'External service settings: \n\tclient count: ' + options['client-count'] + '\n\tport: ' + options['external-service-port'] + '\n\tclient prefix: ' + options['external-service-client-prefix'] + '\n\tclient role: ' + options['client-role']);
 console.log(TAG + 'Web app server settings: \n\tport: ' + options['web-app-port'] + '\n\tsecure: ' + options['secure-web-app'] + '\n\tserving contents of: ' + options['web-app-dir']);
 
 // -- Serve html pages over http
@@ -90,15 +91,23 @@ var id = 1;
 
 app.get('/rcml', function (req, res) {
 	console.log('[server.js] Handing client ' + id);	
-	var rcml = '<?xml version="1.0" encoding="UTF-8"?><Response> <Dial record="false"> <Client>user';
-	rcml += id; 
-	rcml += '</Client> </Dial> </Response>';
+	var rcml = ''
+	if (options['client-role'] == 'passive') {
+		// when webrtc client is passive the RCML should be active and make calls towards it
+		rcml = '<?xml version="1.0" encoding="UTF-8"?><Response> <Dial record="false"> <Client>user';
+		rcml += id; 
+		rcml += '</Client> </Dial> </Response>';
 
-	if (id == options['client-count']) {
-		console.log('[server.js] Reached ' + id + ', wrapping around');	
-		id = 0;	
+		if (id == options['client-count']) {
+			console.log('[server.js] Reached ' + id + ', wrapping around');	
+			id = 0;	
+		}
+		id++;
 	}
-	id++;
+	else {
+		// when webrtc client is active the RCML should be passive and accept webrtc calls from the client
+		rcml = '<?xml version="1.0" encoding="UTF-8"?><Response><Say>One morning, when Gregor Samsa woke from troubled dreams, he found himself transformed in his bed into a horrible vermin. He lay on his armour-like back, and if he lifted his head a little he could see his brown belly, slightly domed and divided by arches into stiff sections. The bedding was hardly able to cover it and seemed ready to slide off any moment. His many legs, pitifully thin compared with the size of the rest of him, waved about helplessly as he looked. "What\'s happened to me?" he thought. It wasn\'t a dream. His room, a proper human room although a little too small, lay peacefully between its four familiar walls. A collection of textile samples lay spread out on the table - Samsa was a travelling salesman - and above it there hung a picture that he had recently cut out of an illustrated magazine and housed in a nice, gilded frame. It showed a lady fitted out with a fur hat and fur boa who sat upright, raising a heavy fur muff that covered the whole of her lower arm towards the viewer. Gregor then turned to look out the window at the dull weather</Say></Response>';
+	}
 
 	res.set('Content-Type', 'text/xml');
 	res.send(rcml);

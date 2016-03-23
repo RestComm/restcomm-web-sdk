@@ -170,11 +170,23 @@
 			'password': password,
 		};
 
+		parameters['registrar'] = registerWsUrl;
+		parameters['domain'] = registerDomain;
+
+		if (role == 'active') {
+			parameters['register'] = false;
+		}
+
+		/*
 		if (role == 'passive') {
 			// use registrar-less mode unless we are using a passive role
 			parameters['registrar'] = registerWsUrl;
 			parameters['domain'] = registerDomain;
 		}
+		else {
+			parameters['register'] = false;
+		}
+		*/
 
 		//clientLog('Device.setup(): ' + JSON.stringify(parameters));
 		RestCommClient.Device.setup(parameters);

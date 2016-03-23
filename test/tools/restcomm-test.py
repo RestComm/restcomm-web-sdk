@@ -193,7 +193,7 @@ def provisionClients(count, accountSid, authToken, restcommUrl, usernamePrefix, 
 		#subprocess.call(cmd.split(), stdout = devnullFile, stderr = devnullFile)
 		subprocess.call(cmd.split())
 
-def startServer(count, clientUrl, externalServiceUrl, usernamePrefix, clientWebAppDir): 
+def startServer(count, clientUrl, externalServiceUrl, usernamePrefix, clientWebAppDir, clientRole): 
 	print TAG + 'Starting http server to handle both http/https request for the webrtc-client web page, and RCML REST requests from Restcomm'
 
 	externalServicePort = '80'
@@ -215,7 +215,7 @@ def startServer(count, clientUrl, externalServiceUrl, usernamePrefix, clientWebA
 	# Add the nodejs path, as it isn't found when we run as root
 	envDictionary['NODE_PATH'] = '/usr/local/lib/node_modules'
 	#cmd = 'server.js ' + str(count) + ' 10512 10510 10511'
-	cmd = 'node http-server.js --client-count ' + str(count) + ' --external-service-port ' + str(externalServicePort) + ' --external-service-client-prefix ' + usernamePrefix + ' --web-app-port ' + str(webAppPort) + ' ' + secureArg + ' --web-app-dir ' + clientWebAppDir
+	cmd = 'node http-server.js --client-count ' + str(count) + ' --external-service-port ' + str(externalServicePort) + ' --external-service-client-prefix ' + usernamePrefix + ' --web-app-port ' + str(webAppPort) + ' ' + secureArg + ' --web-app-dir ' + clientWebAppDir + ' --client-role ' + clientRole
 	# We want it to run in the background
 	#os.system(cmd)
 	#subprocess.call(cmd.split(), env = envDictionary)
@@ -246,13 +246,14 @@ def globalSetup(dictionary):
 		# Provision Restcomm with the needed Clients
 		provisionPhoneNumber(dictionary['phone-number'], dictionary['external-service-url'], dictionary['account-sid'], dictionary['auth-token'], dictionary['restcomm-base-url'])
 
-		# Provision Restcomm with the needed Clients
-		provisionClients(dictionary['count'], dictionary['account-sid'], dictionary['auth-token'], dictionary['restcomm-base-url'], dictionary['username-prefix'], dictionary['password'])
+		if dictionary['client-role'] == 'passive':
+			# Provision Restcomm with the needed Clients only when in passive mode
+			provisionClients(dictionary['count'], dictionary['account-sid'], dictionary['auth-token'], dictionary['restcomm-base-url'], dictionary['username-prefix'], dictionary['password'])
 
 	# if user asked for http server to be started  (i.e. testModes = 010 binary)
 	if testModes & 2:
 		# Start the unified server script to serve both RCML (REST) and html page for webrtc clients to connect to
-		startServer(dictionary['count'], dictionary['client-url'], dictionary['external-service-url'], dictionary['username-prefix'], dictionary['client-web-app-dir'])
+		startServer(dictionary['count'], dictionary['client-url'], dictionary['external-service-url'], dictionary['username-prefix'], dictionary['client-web-app-dir'], dictionary['client-role'])
 
 def globalTeardown(dictionary): 
 	print TAG + "Tearing down tests"
@@ -415,7 +416,7 @@ def startRespawnServer(respawnUrl):
 
 	size = httpd.socket.getsockopt(SOL_SOCKET, SO_RCVBUF)
 	print 'Socket recv buffer size: ' + str(size)
-	httpd.socket.setsockopt(SOL_SOCKET, SO_RCVBUF, size * 4)
+	httpd.socket.setsockopt(SOL_SOCKET, SO_RCVBUF, size * 2)
 	newSize = httpd.socket.getsockopt(SOL_SOCKET, SO_RCVBUF)
 	print 'Socket recv buffer size after set: ' + str(newSize)
 
@@ -437,7 +438,7 @@ parser.add_argument('--client-respawn', dest = 'respawn', action = 'store_true',
 parser.add_argument('--client-respawn-url', dest = 'respawnUrl', default = 'http://127.0.0.1:10511/respawn-user', help = 'Webrtc clients respawn URL to be notified when the call is over, like \'http://127.0.0.1:10511/respawn-user\'')
 parser.add_argument('--client-headless-x-display', dest = 'clientHeadlessDisplay', default = ':99', help = 'When using headless, which virtual X display to use when setting DISPLAY env variable. Default is \':99\'')
 parser.add_argument('--client-role', dest = 'clientRole', default = 'passive', help = 'Role for the client. When \'active\' it makes a call to \'--target-sip-uri\'. When \'passive\' it waits for incoming call. Default is \'passive\'')
-parser.add_argument('--client-target-sip-uri', dest = 'clientTargetSipUri', default = '+1234@127.0.0.1', help = 'Client target SIP URI when \'--client-role\' is \'active\'. Default is \'+1234@127.0.0.1\'')
+parser.add_argument('--client-target-uri', dest = 'clientTargetUri', default = '+1234@127.0.0.1', help = 'Client target URI when \'--client-role\' is \'active\' (it\'s actually a SIP URI without the \'sip:\' part. Default is \'+1234@127.0.0.1\'')
 parser.add_argument('--restcomm-base-url', dest = 'restcommBaseUrl', default = 'http://127.0.0.1:8080', help = 'Restcomm instance base URL, like \'http://127.0.0.1:8080\'')
 parser.add_argument('--restcomm-account-sid', dest = 'accountSid', required = True, help = 'Restcomm accound Sid, like \'ACae6e420f425248d6a26948c17a9e2acf\'')
 parser.add_argument('--restcomm-auth-token', dest = 'authToken', required = True, help = 'Restcomm auth token, like \'0a01c34aac72a432579fe08fc2461036\'')
@@ -448,7 +449,7 @@ parser.add_argument('--version', action = 'version', version = 'restcomm-test.py
 
 args = parser.parse_args()
 
-print TAG + 'Webrtc clients settings: \n\tcount: ' + str(args.count) + '\n\ttarget URL: ' + args.clientUrl + '\n\tregister websocket url: ' + args.registerWsUrl + '\n\tregister domain: ' + args.registerDomain + '\n\tusername prefix: ' + args.usernamePrefix + '\n\tpassword: ' + args.password + '\n\tbrowser executable: ' + args.clientBrowserExecutable + '\n\theadless: ' + str(args.clientHeadless) + '\n\theadless X display: ' + args.clientHeadlessDisplay + '\n\trespawn client browsers: ' + str(args.respawn) + '\n\trespawn url: ' + args.respawnUrl + '\n\tclient role: ' + args.clientRole + '\n\tclient target SIP URI: ' + args.clientTargetSipUri
+print TAG + 'Webrtc clients settings: \n\tcount: ' + str(args.count) + '\n\ttarget URL: ' + args.clientUrl + '\n\tregister websocket url: ' + args.registerWsUrl + '\n\tregister domain: ' + args.registerDomain + '\n\tusername prefix: ' + args.usernamePrefix + '\n\tpassword: ' + args.password + '\n\tbrowser executable: ' + args.clientBrowserExecutable + '\n\theadless: ' + str(args.clientHeadless) + '\n\theadless X display: ' + args.clientHeadlessDisplay + '\n\trespawn client browsers: ' + str(args.respawn) + '\n\trespawn url: ' + args.respawnUrl + '\n\tclient role: ' + args.clientRole + '\n\tclient target SIP URI: ' + args.clientTargetUri
 print TAG + 'Restcomm instance settings: \n\tbase URL: ' + args.restcommBaseUrl + '\n\taccount sid: ' + args.accountSid + '\n\tauth token: ' + args.authToken + '\n\tphone number: ' + args.phoneNumber + '\n\texternal service URL: ' + args.externalServiceUrl
 print TAG + 'Testing modes: ' + str(args.testModes)
 
@@ -469,6 +470,7 @@ globalSetup({
 	'phone-number': args.phoneNumber, 
 	'external-service-url': args.externalServiceUrl,
 	'client-web-app-dir': args.clientWebAppDir,
+	'client-role': args.clientRole,
 })
 
 # Populate a list with browser thread ids and URLs for each client thread that will be spawned
@@ -486,7 +488,7 @@ for i in range(1, args.count + 1):
 		GETData['respawn-url'] = args.respawnUrl;
 		GETData['close-on-end'] = 'true';
 	if args.clientRole == 'active':
-		GETData['call-destination'] = args.clientTargetSipUri;
+		GETData['call-destination'] = args.clientTargetUri;
 	
 	clients.append({ 
 		'id': GETData['username'], 
