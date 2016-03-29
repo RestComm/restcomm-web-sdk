@@ -189,6 +189,17 @@ WrtcEventListener.prototype.onWebRTCommCallOpenErrorEvent = function(webRTCommCa
 	}
 };
 
+WrtcEventListener.prototype.onWebRTCommCallErrorEvent = function(webRTCommCall, error) 
+{
+	if (this.device.debugEnabled) {
+		console.log("WrtcEventListener::onWebRTCommCallErrorEvent");
+	}
+
+	if (this.device.connection) {
+		this.device.connection.onError("Error in call: " + error);
+	}
+};
+
 WrtcEventListener.prototype.onWebRTCommCallClosedEvent = function(webRTCommCall) 
 {
 	if (this.device.debugEnabled) {
