@@ -10,4 +10,4 @@ var options = {
 var file = new(static.Server)();
 var app = http.createServer(options, function (req, res) {
   file.serve(req, res);
-}).listen(8443);
+}).listen(7443);

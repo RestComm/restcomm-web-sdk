@@ -8,6 +8,7 @@
 
 	<title>RestComm Hello World</title>
 
+	<!-- has to go first -->
 	<script type="text/javascript" src='scripts/adapter.js'></script>
 	<script type="text/javascript" src='scripts/jain-sip.js'></script>
 	<script type="text/javascript" src='scripts/WebRTComm.js'></script>
@@ -71,10 +72,13 @@
 		var currentConnection;
 		var parameters = {
 			'debug': true,
-			'username': 'antonis',
+			//'username': 'antonis',
+			'username': 'bob',
 			'password': '1234',
 			//'registrar': 'wss://cloud.restcomm.com:5063',
 			//'domain': 'cloud.restcomm.com',
+			'registrar': 'wss://54.205.219.96:5083',
+			'domain': '54.205.219.96',
 		};
 
 		RestCommClient.Device.setup(parameters);
@@ -118,7 +122,8 @@
 
 		function call() {
 			var parameters = {
-				'username': '+1236@cloud.restcomm.com',  // CHANGEME: update the IP address to your Restcomm instance 
+				//'username': '+1236@cloud.restcomm.com',  // CHANGEME: update the IP address to your Restcomm instance 
+				'username': '+1235@54.205.219.96',  // CHANGEME: update the IP address to your Restcomm instance 
 				'video-enabled': false,
 				'local-media': localMedia,
 				'remote-media': remoteMedia,
@@ -127,11 +132,19 @@
 
 			currentConnection.disconnect(function(connection) {
 				$("#log").text("Connection ended");
+				if (connection.stats !== undefined) {
+					console.log('Retrieved call media stats: ' + JSON.stringify(connection.stats));
+				}
 				remoteMedia.style.display = "none";
 			});
 
 			currentConnection.error(function(error) {
 				$("#log").text("Connection error: " + error);
+			});
+
+			currentConnection.stats(function(connection, stats) {
+				console.log('Retrieved call media stats: ' + stats);
+				//$("#log").text("Connection stats: " + stats);
 			});
 
 			currentConnection.mute(function(muted, connection) {
