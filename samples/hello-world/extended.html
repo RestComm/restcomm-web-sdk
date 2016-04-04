@@ -33,6 +33,7 @@
 		<button id="unmuteAudioButton">Unmute Audio</button>
 		<button id="muteVideoButton">Mute Video</button>
 		<button id="unmuteVideoButton">Unmute Video</button>
+		<button id="getStatsButton">getStats</button>
 		<div id="log">Loading RestComm client...</div>
 	</div>
 
@@ -54,6 +55,7 @@
 		var unmuteAudioButton = document.getElementById("unmuteAudioButton");
 		var muteVideoButton = document.getElementById("muteVideoButton");
 		var unmuteVideoButton = document.getElementById("unmuteVideoButton");
+		var getStatsButton = document.getElementById("getStatsButton");
 
 		callButton.onclick = call;
 		acceptButton.onclick = accept;
@@ -68,6 +70,7 @@
 		unmuteAudioButton.onclick = unmuteAudio;
 		muteVideoButton.onclick = muteVideo;
 		unmuteVideoButton.onclick = unmuteVideo;
+		getStatsButton.onclick = getStats;
 
 		var currentConnection;
 		var parameters = {
@@ -77,8 +80,8 @@
 			'password': '1234',
 			//'registrar': 'wss://cloud.restcomm.com:5063',
 			//'domain': 'cloud.restcomm.com',
-			'registrar': 'wss://54.205.219.96:5083',
-			'domain': '54.205.219.96',
+			'registrar': 'wss://127.0.0.1:5083',
+			'domain': '127.0.0.1',
 		};
 
 		RestCommClient.Device.setup(parameters);
@@ -123,8 +126,8 @@
 		function call() {
 			var parameters = {
 				//'username': '+1236@cloud.restcomm.com',  // CHANGEME: update the IP address to your Restcomm instance 
-				'username': '+1235@54.205.219.96',  // CHANGEME: update the IP address to your Restcomm instance 
-				'video-enabled': false,
+				'username': 'alice@127.0.0.1',  // CHANGEME: update the IP address to your Restcomm instance 
+				'video-enabled': useVideo,
 				'local-media': localMedia,
 				'remote-media': remoteMedia,
 			};
@@ -142,10 +145,12 @@
 				$("#log").text("Connection error: " + error);
 			});
 
+			/*
 			currentConnection.stats(function(connection, stats) {
-				console.log('Retrieved call media stats: ' + stats);
+				console.log('Retrieved on-demand call media stats: ' + JSON.stringify(connection.stats));
 				//$("#log").text("Connection stats: " + stats);
 			});
+			*/
 
 			currentConnection.mute(function(muted, connection) {
 				$("#log").text("Connection audio muted: " + muted);
@@ -209,6 +214,13 @@
 
 		function unmuteVideo() {
 			RestCommClient.Device.activeConnection().muteVideo(false);
+		}
+		function getStats() {
+			RestCommClient.Device.activeConnection().getStats(function(stats) {
+				console.log('Retrieved on-demand call media stats: ' + JSON.stringify(stats));
+				//$("#log").text("Connection stats: " + stats);
+			});
+			
 		}
 		</script>
 

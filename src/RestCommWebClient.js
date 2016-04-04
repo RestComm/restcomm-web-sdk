@@ -273,7 +273,7 @@ WrtcEventListener.prototype.onWebRTCommCallStatsEvent = function(webRTCommCall, 
 	}
 
 	if (this.device.connection.onStats != null) {
-		this.device.connection.onStats(this.device.connection, stats);
+		this.device.connection.onStats(stats);
 	}
 };
 
@@ -537,6 +537,7 @@ Connection.prototype.disconnect = function(callback)
  * Assign callback to get call media stats when call is over
  * @param {function} callback - Callback to be invoked
  */
+/*
 Connection.prototype.stats = function(callback)
 {
 	// we are passed a callback, need to keep the listener for later use
@@ -546,24 +547,22 @@ Connection.prototype.stats = function(callback)
 
 	this.onStats = callback;
 }
+*/
 
 /**
- * Get call media stats
- * @param {function} callback - Callback to be invoked
+ * Get call media stats on-demand. Normally stats are returned in the end of the call, but you can request on-demand stats with this API
+ * @param {function} callback - Callback to be invoked when stats are ready
  */
-/*
 Connection.prototype.getStats = function(callback)
 {
-	this.webrtcommCall.getStats(callback);
-
 	// we are passed a callback, need to keep the listener for later use
 	if (this.device.debugEnabled) {
-		console.log("Connection: assign error callback");
+		console.log("Connection: assign getStats callback");
 	}
 
 	this.onStats = callback;
+	this.webrtcommCall.getStats();
 }
-*/
 
 /**
  * This function has a dual purpose: a. if invoked with a single function
