@@ -220,8 +220,13 @@
 			currentConnection = connection;
 			currentConnection.disconnect(function(connection) {
 				$("#log").text("Connection ended");
-				remoteMedia.style.display = "none";
 
+				// print stats if available
+				if (connection.stats !== undefined) {
+					console.log('Retrieved call media stats: ' + JSON.stringify(connection.stats));
+				}
+
+				remoteMedia.style.display = "none";
 				if (closeOnEnd) {
 					// After call is finished we want to shut down Device (and see more at Device.offline())
 					RestCommClient.Device.destroy();

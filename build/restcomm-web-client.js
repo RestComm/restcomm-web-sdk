@@ -62,7 +62,7 @@ include('scripts/jain-sip.js');
 include('scripts/WebRTComm.js');
 */
 
-// --- WrtcEventListener callbacks
+// WrtcEventListener callbacks
 function WrtcEventListener(device)
 {
 	if (device.debugEnabled) {
@@ -71,7 +71,7 @@ function WrtcEventListener(device)
 	this.device = device;
 }
 
-// General events (WebRTCommClient events)
+// ---- General events (WebRTCommClient events)
 
 // WebRTCommClient is ready
 WrtcEventListener.prototype.onWebRTCommClientOpenedEvent = function() 
@@ -110,7 +110,7 @@ WrtcEventListener.prototype.onGetUserMediaErrorEventHandler = function(error)
 	this.device.onError("Media error: " + error);
 };
 
-// Call related listeners (WebRTCommCall listener)
+// ---- Call related listeners (WebRTCommCall listener)
 
 // Ringing for incoming calls 
 WrtcEventListener.prototype.onWebRTCommCallRingingEvent = function(webRTCommCall) 
@@ -174,6 +174,16 @@ WrtcEventListener.prototype.onWebRTCommCallOpenErrorEvent = function(webRTCommCa
 	}
 };
 
+WrtcEventListener.prototype.onWebRTCommCallErrorEvent = function(webRTCommCall, error) 
+{
+	if (this.device.debugEnabled) {
+	}
+
+	if (this.device.connection) {
+		this.device.connection.onError("Error in call: " + error);
+	}
+};
+
 WrtcEventListener.prototype.onWebRTCommCallClosedEvent = function(webRTCommCall) 
 {
 	if (this.device.debugEnabled) {
@@ -182,6 +192,8 @@ WrtcEventListener.prototype.onWebRTCommCallClosedEvent = function(webRTCommCall)
 	// update device & connection status and notify Connection and Device listener (notice that both Device and Connection define listeners for disconnect event)
 	this.device.status = 'ready';
 	this.device.connection.status = 'closed';
+	// at the time that the call is closed webrtcomm also includes stats about the disconnected call, let's forward them to the user application
+	this.device.connection.stats = webRTCommCall.stats;
 	this.device.connection.onDisconnect(this.device.connection);
 	if (this.device.onDisconnect != null) {
 		this.device.onDisconnect(this.device.connection);
@@ -234,7 +246,17 @@ WrtcEventListener.prototype.onWebRTCommCallHangupEvent = function(webRTCommCall)
 	//currentCall = undefined;
 };
 
-// Message related events
+WrtcEventListener.prototype.onWebRTCommCallStatsEvent = function(webRTCommCall, stats) 
+{
+	if (this.device.debugEnabled) {
+	}
+
+	if (this.device.connection.onStats != null) {
+		this.device.connection.onStats(stats);
+	}
+};
+
+// ---- Message related events
 
 // Message arrived
 WrtcEventListener.prototype.onWebRTCommMessageReceivedEvent = function(message) {
@@ -313,6 +335,12 @@ function Connection(device, status)
 	 * @type Function
 	 */
 	this.onDisconnect = null;
+	/**
+	 * Callback for when Connection stats are available for the call. Whenever a call ends if this callback is set we are sent the media stats i.e. retrieved from PeerConnection.getStats() and normalized
+	 * @name Connection#onStats
+	 * @type Function
+	 */
+	this.onStats = null;
 	/**
 	 * Callback for when Connection's audio is muted/unmuted
 	 * @name Connection#onMute
@@ -470,6 +498,35 @@ Connection.prototype.disconnect = function(callback)
 		}
 
 	}
+}
+
+/**
+ * Assign callback to get call media stats when call is over
+ * @param {function} callback - Callback to be invoked
+ */
+/*
+Connection.prototype.stats = function(callback)
+{
+	// we are passed a callback, need to keep the listener for later use
+	if (this.device.debugEnabled) {
+	}
+
+	this.onStats = callback;
+}
+*/
+
+/**
+ * Get call media stats on-demand. Normally stats are returned in the end of the call, but you can request on-demand stats with this API
+ * @param {function} callback - Callback to be invoked when stats are ready
+ */
+Connection.prototype.getStats = function(callback)
+{
+	// we are passed a callback, need to keep the listener for later use
+	if (this.device.debugEnabled) {
+	}
+
+	this.onStats = callback;
+	this.webrtcommCall.getStats();
 }
 
 /**
