@@ -76,11 +76,11 @@
 		var parameters = {
 			'debug': true,
 			//'username': 'antonis',
-			'username': 'bob',
+			'username': 'alice',
 			'password': '1234',
 			//'registrar': 'wss://cloud.restcomm.com:5063',
 			//'domain': 'cloud.restcomm.com',
-			'registrar': 'wss://127.0.0.1:5083',
+			'registrar': 'wss://192.168.2.16:5083',
 			'domain': '127.0.0.1',
 		};
 
@@ -102,6 +102,13 @@
 		RestCommClient.Device.incoming(function(connection) {
 			$("#log").text("Incoming call from " + connection.parameters.From);
 			currentConnection = connection;
+			
+			// retrieve custom SIP headers if any
+			var customHeaders = connection.parameters['Custom-Headers'];
+			for (var key in customHeaders) {
+				console.log('Custom SIP header: ' + key + ', value: ' + customHeaders[key]);
+			}
+
 			currentConnection.disconnect(function(connection) {
 				$("#log").text("Connection ended");
 				remoteMedia.style.display = "none";
@@ -163,6 +170,8 @@
 		function accept() {
 			var parameters = {
 				'video-enabled': useVideo,
+				'local-media': localMedia,
+				'remote-media': remoteMedia,
 			};
 			currentConnection.accept(parameters);
 		}

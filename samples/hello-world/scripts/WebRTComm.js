@@ -647,6 +647,38 @@ PrivateJainSipCallConnector.prototype.accept = function(sdpAnswer) {
 
 
 /**
+ * Send DTMF digit over SIP INFO
+ * @public 
+ * @param {String} dtmfDigit DTMF digit to send
+ */
+PrivateJainSipCallConnector.prototype.sendSipDtmf = function(dtmfDigit) {
+	console.debug("PrivateJainSipCallConnector:sendSipDtmf()");
+
+	var dialog = null;
+	if (this.sipCallState === this.SIP_INVITED_ACCEPTED_STATE) {
+		dialog = this.jainSipInvitedDialog;
+	}
+	if (this.sipCallState === this.SIP_INVITING_ACCEPTED_STATE) {
+		dialog = this.jainSipInvitingDialog;
+	}
+	if (dialog) {
+		try {
+			var request = dialog.createRequest("INFO");
+			request.setContent("Signal=" + dtmfDigit + "\r\nDuration=100\r\n",
+					this.clientConnector.jainSipHeaderFactory.createContentTypeHeader("application", "dtmf-relay"));
+			var clientTransaction = this.clientConnector.jainSipProvider.getNewClientTransaction(request);
+			dialog.sendRequest(clientTransaction);
+		} catch (exception) {
+			console.error("PrivateJainSipCallConnector:sendSipDtmf(): catched exception exception:" + exception);
+		} 
+	}
+	else {
+		console.error("PrivateJainSipCallConnector:sendSipDtmf(): couldn't retrieve SIP dialog");
+	}
+};
+
+
+/**
  * PrivateJainSipClientConnector interface implementation: handle SIP Request event
  * @public 
  * @param {RequestEvent} requestEvent 
@@ -928,7 +960,7 @@ PrivateJainSipCallConnector.prototype.processInvitingSipResponseEvent = function
 	} else if (this.sipCallState === this.SIP_INVITING_ERROR_STATE) {
 		console.error("PrivateJainSipCallConnector:processInvitingSipResponseEvent(): bad state, SIP response ignored");
 	} else if (this.sipCallState === this.SIP_INVITING_ACCEPTED_STATE) {
-		console.error("PrivateJainSipCallConnector:processInvitingSipResponseEvent(): bad state, SIP response ignored");
+		console.debug("PrivateJainSipCallConnector:processInvitingSipResponseEvent(): Got reponse status: " + jainSipResponse.getStatusCode());
 	} else if (this.sipCallState === this.SIP_INVITING_LOCAL_HANGINGUP_STATE) {
 		if (statusCode === 407) {
 			try {
@@ -984,11 +1016,21 @@ PrivateJainSipCallConnector.prototype.processInvitedSipRequestEvent = function(r
 
 			//  Notify remote SDP offer to WebRTCommCall
 			this.webRTCommCall.onPrivateCallConnectorRemoteSdpOfferEvent(this.jainSipInvitedRequest.getContent());
+			
+			// See if there are any custom SIP headers and expose them. Custom headers are headers starting with 'X-'
+			var customHeaders = {};
+			var headerList = jainSipRequest.getHeaders();
+			for (var i = 0; i < headerList.length; i++) {
+				var header = headerList[i];
+				if (header.getName().match(/^X-/)) {
+					customHeaders[header.getName()] = header.getValue();
+				}
+			}
 
 			// Notify incoming communication
 			var callerPhoneNumber = headerFrom.getAddress().getURI().getUser();
 			var callerDisplayName = headerFrom.getAddress().getDisplayName();
-			this.webRTCommCall.onPrivateCallConnectorCallRingingEvent(callerPhoneNumber, callerDisplayName);
+			this.webRTCommCall.onPrivateCallConnectorCallRingingEvent(callerPhoneNumber, callerDisplayName, customHeaders);
 		} else if (requestMethod === "CANCEL") {
 			try {
 				// Send 200OK CANCEL
@@ -1058,7 +1100,7 @@ PrivateJainSipCallConnector.prototype.processInvitedSipResponseEvent = function(
 	if (this.sipCallState === this.SIP_INVITED_STATE) {
 		console.error("PrivateJainSipCallConnector:processInvitedSipResponseEvent(): bad state, SIP response ignored");
 	} else if (this.sipCallState === this.SIP_INVITED_ACCEPTED_STATE) {
-		console.error("PrivateJainSipCallConnector:processInvitedSipResponseEvent(): bad state, SIP response ignored");
+		console.debug("PrivateJainSipCallConnector:processInvitedSipResponseEvent(): Got reponse status: " + jainSipResponse.getStatusCode());
 	} else if (this.sipCallState === this.SIP_INVITED_LOCAL_HANGINGUP_STATE) {
 		if (statusCode === 407) {
 			try {
@@ -1085,7 +1127,8 @@ PrivateJainSipCallConnector.prototype.processInvitedSipResponseEvent = function(
 	} else {
 		console.error("PrivateJainSipCallConnector:processInvitedSipResponseEvent(): bad state, SIP request ignored");
 	}
-};/**
+};
+/**
  * @class PrivateJainSipClientConnector
  * @classdesc Private framework class handling  SIP client/user agent control 
  * @constructor 
@@ -1664,7 +1707,7 @@ PrivateJainSipClientConnector.prototype.processTimeout = function(timeoutEvent) 
 		if (sessionConnector) {
 			sessionConnector.onJainSipClientConnectorSipTimeoutEvent(timeoutEvent);
 		} else if (this.jainSipRegisterRequest.getCallId().getCallId() === sipCallId) {
-			console.error("PrivateJainSipClientConnector:processTimeout(): SIP registration failed, request timeout, no response from SIP server");
+			console.error("PrivateJainSipClientConnector:processTimeout(): SIP registration failed, request timeout, no response from SIP server, Call-Id: " + sipCallId);
 			this.reset();
 			this.webRTCommClient.onPrivateClientConnectorOpenErrorEvent("Request Timeout");
 		} else {
@@ -1856,6 +1899,7 @@ WebRTCommCall = function(webRTCommClient) {
 		this.calleePhoneNumber = undefined;
 		this.callerPhoneNumber = undefined;
 		this.callerDisplayName = undefined;
+		this.customHeaders = undefined;
 		this.incomingCallFlag = false;
 		this.configuration = undefined;
 		this.connector = undefined;
@@ -2549,7 +2593,8 @@ WebRTCommCall.prototype.sendDTMF = function(dtmfEvent) {
 		console.debug('Sending Tones, duration, gap: ', dtmfEvent, duration, gap);
 		this.dtmfSender.insertDTMF(dtmfEvent, duration, gap);
 	} else {
-		console.debug('DTMFSender not initialized so not Sending Tones, duration, gap: ', dtmfEvent, duration, gap);
+		console.debug('DTMFSender not initialized, falling back to SIP INFO DTMF, Sending tones, duration, gap: ', dtmfEvent, duration, gap);
+		this.connector.sendSipDtmf(dtmfEvent);
 	}
 }
 
@@ -3141,12 +3186,15 @@ WebRTCommCall.prototype.onPrivateCallConnectorCallOpenErrorEvent = function(erro
  * @param {string} callerPhoneNumber  caller contact identifier (e.g. bob@sip.net)
  * @param {string} callerDisplayName  caller contact identifier (e.g. bob@sip.net)
  */
-WebRTCommCall.prototype.onPrivateCallConnectorCallRingingEvent = function(callerPhoneNumber, callerDisplayName) {
+WebRTCommCall.prototype.onPrivateCallConnectorCallRingingEvent = function(callerPhoneNumber, callerDisplayName, customHeaders) {
 	console.debug("WebRTCommCall:onPrivateCallConnectorCallRingingEvent():callerPhoneNumber=" + callerPhoneNumber);
 	console.debug("WebRTCommCall:onPrivateCallConnectorCallRingingEvent():callerDisplayName=" + callerDisplayName);
+	console.debug("WebRTCommCall:onPrivateCallConnectorCallRingingEvent():customHeaders=" + JSON.stringify(customHeaders));
+
 	// Notify the closed event to the listener
 	this.callerPhoneNumber = callerPhoneNumber;
 	this.callerDisplayName = callerDisplayName;
+	this.customHeaders = customHeaders;
 	if (this.eventListener.onWebRTCommCallRingingEvent) {
 		var that = this;
 		setTimeout(function() {
@@ -3290,7 +3338,7 @@ WebRTCommCall.prototype.onRtcPeerConnectionOnAddStreamEvent = function(event) {
 								console.debug('No local stream to create DTMF Sender');
 							}
 						} else {
-							console.warn('RTCPeerConnection method createDTMFSender() is not support by this browser.');
+							console.warn('RTCPeerConnection method createDTMFSender() is not support by this browser, will fallback to SIP INFO DTMF.');
 						}
 					} catch (exception) {
 						console.error("WebRTCommCall:onRtcPeerConnectionOnAddStreamEvent(): catched exception in listener:" + exception);
@@ -3430,7 +3478,10 @@ WebRTCommCall.prototype.setRtcPeerConnectionLocalDescription = function(sdpOffer
 	var sdpParser = new SDPParser();
 	var parsedSdpOffer = sdpParser.parse(sdpOfferString);
 
+	this.removeEmptyIceUfragPwdAttributes(parsedSdpOffer);
+
 	// Check if offer is ok with the requested media constraints
+	/*
 	if (window.webkitRTCPeerConnection) {
 		if (this.configuration.videoMediaFlag === false) {
 			this.removeMediaDescription(parsedSdpOffer, "video");
@@ -3440,6 +3491,7 @@ WebRTCommCall.prototype.setRtcPeerConnectionLocalDescription = function(sdpOffer
 			this.removeMediaDescription(parsedSdpOffer, "audio");
 		}
 	}
+	*/
 
 	if (this.configuration.audioCodecsFilter || this.configuration.videoCodecsFilter || this.configuration.opusFmtpCodecsParameters) {
 		try {
@@ -4283,6 +4335,31 @@ WebRTCommCall.prototype.patchChromeIce = function(sessionDescription, attributeT
 };
 
 /**
+ * If SDP attributes ice-ufrag and or ice-pwd exist in the SDP but are empty, they need to be removed
+ * @private
+ * @param {SessionDescription} sessionDescription JAIN (gov.nist.sdp) SDP offer object 
+ */
+WebRTCommCall.prototype.removeEmptyIceUfragPwdAttributes = function(sessionDescription ) {
+   // Check if ice-ufrag and pwd are empty and if so remove
+	var mediaDescriptions = sessionDescription.getMediaDescriptions(false);
+	for (var i = 0; i < mediaDescriptions.length; i++) {
+		var newAttributeFieldArray = new Array();
+		var attributeFields = mediaDescriptions[i].getAttributes();
+		for (var k = 0; k < attributeFields.length; k++) {
+			var attributeField = attributeFields[k];
+			if ((attributeField.getName() === "ice-ufrag" && !attributeField.getValue()) ||
+						(attributeField.getName() === "ice-pwd" && !attributeField.getValue())) {
+            console.warn("WebRTCommCall:setRtcPeerConnectionLocalDescription(): found empty ice-ufrag/ice-pwd; removing them");
+			}
+			else {
+				newAttributeFieldArray.push(attributeField);
+			}
+		}
+		mediaDescriptions[i].setAttributes(newAttributeFieldArray);
+	}
+}
+
+/**
  * Modifiy SDP based on configured codec filter
  * @private
  * @param {SessionDescription} sessionDescription  JAIN (gov.nist.sdp) SDP offer object 
@@ -4292,6 +4369,7 @@ WebRTCommCall.prototype.removeMediaDescription = function(sessionDescription, me
 	console.debug("WebRTCommCall:removeMediaDescription()");
 	if (sessionDescription instanceof SessionDescription) {
 		try {
+			/* No need to remove media descriptions, it's not properly handled by PeerConnection
 			var mediaDescriptions = sessionDescription.getMediaDescriptions(false);
 			for (var i = 0; i < mediaDescriptions.length; i++) {
 				var mediaDescription = mediaDescriptions[i];
@@ -4302,6 +4380,7 @@ WebRTCommCall.prototype.removeMediaDescription = function(sessionDescription, me
 					break;
 				}
 			}
+			*/
 
 			if (window.mozRTCPeerConnection) {
 				var attributes = sessionDescription.getAttributes(false);

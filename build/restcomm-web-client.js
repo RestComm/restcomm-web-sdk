@@ -125,6 +125,7 @@ WrtcEventListener.prototype.onWebRTCommCallRingingEvent = function(webRTCommCall
 		this.device.connection.parameters = {
 			'From': webRTCommCall.callerPhoneNumber, 
 			'To': wrtcConfiguration.sip.sipUserName, 
+			'Custom-Headers': webRTCommCall.customHeaders,
 		};
 
 		this.device.connection.webrtcommCall = webRTCommCall;
@@ -324,33 +325,38 @@ function Connection(device, status)
 	 */
 	this.videoMuted = false;
 	/**
-	 * Callback for when there is a Connection error
+	 * Callback for when there is a Connection error (internal)
 	 * @name Connection#onError
 	 * @type Function
+	 * @ignore
 	 */
 	this.onError  = null;
 	/**
-	 * Callback for when Connection is disconnected
+	 * Callback for when Connection is disconnected (internal)
 	 * @name Connection#onDisconnect
 	 * @type Function
+	 * @ignore
 	 */
 	this.onDisconnect = null;
 	/**
-	 * Callback for when Connection stats are available for the call. Whenever a call ends if this callback is set we are sent the media stats i.e. retrieved from PeerConnection.getStats() and normalized
+	 * Callback for when Connection stats are available for the call. Whenever a call ends if this callback is set we are sent the media stats i.e. retrieved from PeerConnection.getStats() and normalized (internal)
 	 * @name Connection#onStats
 	 * @type Function
+	 * @ignore
 	 */
 	this.onStats = null;
 	/**
-	 * Callback for when Connection's audio is muted/unmuted
+	 * Callback for when Connection's audio is muted/unmuted (internal)
 	 * @name Connection#onMute
 	 * @type Function
+	 * @ignore
 	 */
 	this.onMute = null;
 	/**
-	 * Callback for when Connection's video is muted/unmuted
+	 * Callback for when Connection's video is muted/unmuted (internal)
 	 * @name Connection#onMuteVideo
 	 * @type Function
+	 * @ignore
 	 */
 	this.onMuteVideo = null;
 
@@ -456,7 +462,7 @@ Connection.prototype.sendDigits = function(digits)
 
 /**
  * Register callback to be notified when there is a Connection error
- * @param {function} callback - Callback to be invoked
+ * @param {function} callback - Callback to be invoked. Callback will be invoked as: callback(Connection)
  */
 Connection.prototype.error = function(callback)
 {
@@ -471,7 +477,7 @@ Connection.prototype.error = function(callback)
  * This function has a dual purpose: a. if invoked with a single function
  * argument it registers a callback to be notified when the connection is
  * disconnected, and b. if invoked with no arguments it disconnects the connection
- * @param {function} callback - Callback to be invokeda in (a)
+ * @param {function} callback - Callback to be invoked in (a). Callback will be invoked as: callback(Connection)
  */
 Connection.prototype.disconnect = function(callback)
 {
@@ -517,7 +523,15 @@ Connection.prototype.stats = function(callback)
 
 /**
  * Get call media stats on-demand. Normally stats are returned in the end of the call, but you can request on-demand stats with this API
- * @param {function} callback - Callback to be invoked when stats are ready
+ * @param {function} callback - Callback to be invoked when stats are ready. Callback will be invoked as: callback(Dictionary). Dictionary will include the following keys: <br>
+ * <b>media-type</b> : audio/video (ff only, until we figure it out for chrome) <br>
+ * <b>direction</b> : inbound/outbound <br>
+ * <b>bitrate</b> : bitrate in kbit/sec, like 250 kbit/sec (ff only) <br>
+ * <b>packetsLost</b> : lost packet count <br>
+ * <b>bytesTransfered</b>: bytes sent/received <br>
+ * <b>packetsTransfered</b>: packets sent/received <br>
+ * <b>jitter</b> : jitter for incoming packets <br>
+ * <b>ssrc</b> : synchronization source for this stream, like 501954246
  */
 Connection.prototype.getStats = function(callback)
 {
@@ -659,57 +673,66 @@ var RestCommClient = {
 	Device: {
 		// --- Callbacks for Device events
 		/** 
-		 * Callback called when Device is ready
+		 * Callback called when Device is ready (internal)
 		 * @name Device#onReady
 		 * @type Function
+		 * @ignore
 		 */
 		onReady: null,
 		/** 
-		 * Called if there's an error with the Device
+		 * Called if there's an error with the Device (internal)
 		 * @name Device#onError
 		 * @type Function
+		 * @ignore
 		 */
 		onError: null,
 		/** 
-		 * Called when Connection state changes
+		 * Called when Connection state changes (internal)
 		 * @name Device#onConnect
 		 * @type Function
+		 * @ignore
 		 */
 		onConnect: null,
 		/** 
-		 * Called when incoming Connection arrives
+		 * Called when incoming Connection arrives (internal)
 		 * @name Device#onIncoming
 		 * @type Function
+		 * @ignore
 		 */
 		onIncoming: null,
 		/** 
-		 * Called when incoming text message arrives
+		 * Called when incoming text message arrives (internal)
 		 * @name Device#onMessage
 		 * @type Function
+		 * @ignore
 		 */
 		onMessage: null,
 		/** 
-		 * Called when Connection disconnects
+		 * Called when Connection disconnects (internal)
 		 * @name Device#onDisconnect
 		 * @type Function
+		 * @ignore
 		 */
 		onDisconnect: null,
 		/** 
-		 * Called when Device goes offline
+		 * Called when Device goes offline (internal)
 		 * @name Device#onOffline
 		 * @type Function
+		 * @ignore
 		 */
 		onOffline: null,
 		/** 
-		 * Called when an incoming call is cancelled by the caller before being accepted
+		 * Called when an incoming call is cancelled by the caller before being accepted (internal)
 		 * @name Device#onCancel
 		 * @type Function
+		 * @ignore
 		 */
 		onCancel: null,
 		/** 
 		 * Called when there is a presence update for the client (Not Implemented yet)
 		 * @name Device#onDisconnect
 		 * @type Function
+		 * @ignore
 		 */
 		onPresence: null,
 
@@ -854,7 +877,7 @@ var RestCommClient = {
 		/**
 		 * Register callback to be notified when Device is ready
 		 * @function Device#ready
-		 * @param {function} callback - Callback to be invoked
+		 * @param {function} callback - Callback to be invoked. Callback will be invoked as: callback(Device)
 		 */
 		ready: function(callback) {
 			if (this.debugEnabled) {
@@ -864,9 +887,9 @@ var RestCommClient = {
 		},
 
 		/**
-		 * Register callback to be notified when an incoming call arrives
+		 * Register callback to be notified when an incoming call arrives. That callback provides a Connection object to the App
 		 * @function Device#incoming
-		 * @param {function} callback - Callback to be invoked
+		 * @param {function} callback - Callback to be invoked. Callback will be invoked as: callback(Connection)
 		 */
 		incoming: function(callback) {
 			if (this.debugEnabled) {
@@ -878,7 +901,7 @@ var RestCommClient = {
 		/**
 		 * Register callback to be notified when the device goes offline
 		 * @function Device#offline
-		 * @param {function} callback - Callback to be invoked
+		 * @param {function} callback - Callback to be invoked. Callback will be invoked as: callback(Device)
 		 */
 		offline: function(callback) {
 			if (this.debugEnabled) {
@@ -890,7 +913,7 @@ var RestCommClient = {
 		/**
 		 * Register callback to be notified when an incoming call is canceled from the caller
 		 * @function Device#cancel
-		 * @param {function} callback - Callback to be invoked
+		 * @param {function} callback - Callback to be invoked. Callback will be invoked as: callback(Connection)
 		 */
 		cancel: function(callback) {
 			if (this.debugEnabled) {
@@ -902,7 +925,9 @@ var RestCommClient = {
 		/**
 		 * Register callback to be notified when an incoming message arrives
 		 * @function Device#message
-		 * @param {function} callback - Callback to be invoked
+		 * @param {function} callback - Callback to be invoked. Callback will be invoked as: callback(parameters). Parameters are:<br>
+		 * <b>From</b> : Originator of the text message, i.e. <i>bob</i> <br>
+		 * <b>Text</b> : Actual text of the message
 		 */
 		message: function(callback) {
 			if (this.debugEnabled) {
@@ -912,7 +937,7 @@ var RestCommClient = {
 		},
 
 		/**
-		 * Register callback to be notified when there's a presence event
+		 * Register callback to be notified when there's a presence event (Not implemented yet)
 		 * @function Device#presence
 		 * @param {function} callback - Callback to be invoked
 		 */
@@ -925,9 +950,9 @@ var RestCommClient = {
 		},
 
 		/**
-		 * Register callback to be notified when there's a Device error
+		 * Register callback to be notified when there's a Device error and convey a string describing the error
 		 * @function Device#error
-		 * @param {function} callback - Callback to be invoked
+		 * @param {function} callback - Callback to be invoked. Callback will be invoked as: callback(String)
 		 */
 		error: function(callback) {
 			if (this.debugEnabled) {
@@ -943,7 +968,7 @@ var RestCommClient = {
 		 * invoked with two optional non function arguments it initiates a call towards a
 		 * remote party with the given params
 		 * @function Device#connect
-		 * @param {varies} arg1 - Callback to be invoked (a) or params (b)
+		 * @param {varies} arg1 - Callback to be invoked (a) or params (b). In (a) callback will be invoked as: callback(Connection)
 		 * @param {dictionary} arg2 - Parameters for the connection: <br>
 		 * <b>username</b> : Username for the called party, i.e. <i>+1235@cloud.restcomm.com</i> <br>
 		 * <b>localMedia</b> : Local media stream, usually an HTML5 video or audio element <br>
@@ -1047,7 +1072,7 @@ var RestCommClient = {
 		/**
 		 * Register callback to be notified when Connection is disconnected
 		 * @function Device#disconnect
-		 * @param {function} callback - Callback to be invoked
+		 * @param {function} callback - Callback to be invoked. Callback will be invoked as: callback(Connection)
 		 */
 		disconnect: function(callback) {
 			if (this.debugEnabled) {
