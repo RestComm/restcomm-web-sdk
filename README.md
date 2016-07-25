@@ -5,6 +5,9 @@ RestComm WebRTC SDK is a simple yet efficient high level, Twilio Compatible Java
 
 RestComm WebRTC SDK allows you to create Real Time Video, Voice and Instant Messaging Web Applications that can connect together any WebRTC enabled Browser (Chrome, Firefox, ...), SIP enabled devices and legacy phones (Cell Phone, Desktop Phone) 
 
+Quick Start Guide
+========
+http://documentation.telestax.com/connect/sdks/restcomm-client-web-sdk-quick-start.html
 
 Documentation
 ========
