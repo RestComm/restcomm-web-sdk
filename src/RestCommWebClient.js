@@ -835,12 +835,12 @@ var RestCommClient = {
 		},
 
 		/**
-		 * Setup RestComm Web Client SDK 'Device' entity
+		 * Setup RestComm Web Client SDK 'Device' entity. For registrar-less usage you need to omit <i>registrar</i> and <i>domain</i> fields, and later when calling Device.connect() make sure that you use a full SIP URI for the <i>username</i>
 		 * @function Device#setup
 		 * @param {string} parameters - Parameters for the Device entity: <br>
 		 * <b>username</b> : Username for the client, i.e. <i>web-sdk</i> <br>
 		 * <b>password</b> : Password to be used in client authentication, i.e. <i>1234</i> <br>
-		 * <b>registrar</b> : URL for the registrar, i.e. <i>wss://cloud.restcomm.com:5063</i> <br>
+		 * <b>registrar</b> : URL for the registrar, i.e. <i>wss://cloud.restcomm.com:5063</i>. If you want signalling traffic to be unencrypted you can use <i>ws:</i> instead of <i>wss:</i>, but you need to make sure that you are running in localhost, to workaround the requirement that webrtc works only in secure origins <br>
 		 * <b>domain</b> : domain to be used, i.e. <i>cloud.restcomm.com</i> <br>
 		 * <b>debug</b> : Enable debug logging in browser console <br>
 		 */
@@ -1020,7 +1020,7 @@ var RestCommClient = {
 		 * @function Device#connect
 		 * @param {varies} arg1 - Callback to be invoked (a) or params (b). In (a) callback will be invoked as: callback(Connection)
 		 * @param {dictionary} arg2 - Parameters for the connection: <br>
-		 * <b>username</b> : Username for the called party, i.e. <i>+1235@cloud.restcomm.com</i> <br>
+		 * <b>username</b> : Username for the called party, i.e. <i>+1235@cloud.restcomm.com</i>. When not in registrar-less mode you can omit the domain and just use <i>+1235</i> <br>
 		 * <b>localMedia</b> : Local media stream, usually an HTML5 video or audio element <br>
 		 * <b>remoteMedia</b> : Remote media stream, usually an HTML5 video or audio element <br>
 		 * <b>videoEnabled</b> : Should we enable video for this call (boolean) <br>

@@ -74,6 +74,9 @@
 			'debug': true,
 			'username': 'web-sdk',
 			'password': '1234',
+			// If you want to register to a local Restcomm Connect instance running at localhost and you want to use unencrypted signaling you need to provide those as well and use a provisioned client as a name (like bob or alice)
+			//'registrar': 'ws://127.0.0.1:5082',
+			//'domain': '127.0.0.1',
 		};
 
 		// In order to use RestCommWebClient you first to setup the Device with parameters set above
@@ -98,6 +101,8 @@
 		function call() {
 			var parameters = {
 				'username': '+1235@cloud.restcomm.com',  // CHANGEME: update the IP address to your Restcomm instance 
+				// for a local Restcomm Connect instance running at localhost, avoid using a domain (or if you do, make sure it corresponds to your local ip/domain)
+				//'username': '+1235',  // CHANGEME: update the IP address to your Restcomm instance 
 				'video-enabled': false,  // should we use WebRTC video or WebRTC audio only?
 				'local-media': localMedia,
 				'remote-media': remoteMedia,
