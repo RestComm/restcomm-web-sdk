@@ -422,55 +422,64 @@ Connection.prototype.accept = function(parameters)
 	this.device.sounds.audioRinging.pause();
 
 	remoteMedia = parameters['remote-media'];
-	this.parameters['video-enabled'] = parameters['video-enabled'];
 
 	if (!parameters['fake-media']) {
 		parameters['fake-media'] = false;
 	}
 
 	var that = this;
-	// webrtc getUserMedia
-	getUserMedia({audio:true, video:parameters['video-enabled'], fake: parameters['fake-media']}, 
-			function(stream) {
-				// got local stream as result of getUserMedia() -add it to localVideo html element
-				if (that.debugEnabled) {
-					console.log("Connection::accept(), received local WebRTC stream");
-				}
-				parameters['local-media'].src = URL.createObjectURL(stream);
-				localStream = stream;
+	
+	var onMediaStream = function(stream) {
+		// got local stream as result of getUserMedia() -add it to localVideo html element
+		if (that.debugEnabled) {
+			console.log("Connection::accept(), received local WebRTC stream");
+		}
+		parameters['local-media'].src = URL.createObjectURL(stream);
+		localStream = stream;
+		var connection = that;
+		var callConfiguration = {
+				displayName: wrtcConfiguration.sip.sipDisplayName,
+				localMediaStream: localStream,
+				audioMediaFlag: true,
+				videoMediaFlag: !(parameters['video-source'] == 'no-video'),
+				messageMediaFlag: false,
+				audioCodecsFilter: '',
+				videoCodecsFilter: ''
+		};
 
-				var callConfiguration = {
-							 displayName: wrtcConfiguration.sip.sipDisplayName,
-							 localMediaStream: localStream,
-							 audioMediaFlag: true,
-							 videoMediaFlag: parameters['video-enabled'],
-							 messageMediaFlag: false,
-							 audioCodecsFilter: '',
-							 videoCodecsFilter: ''
-				};
+		if (connection.webrtcommCall) {
+			connection.webrtcommCall.accept(callConfiguration);
+			connection.status = 'open';
+		}
 
-				if (that.webrtcommCall) {
-					that.webrtcommCall.accept(callConfiguration);
-					that.status = 'open';
-				}
-
-				if (localStream.getVideoTracks().length > 0) {
-					if (that.debugEnabled) {
-						console.log("Connection::accept(): Using video device: " + localStream.getVideoTracks()[0].label);
-					}
-				}
-				if (localStream.getAudioTracks().length > 0) {
-					if (that.debugEnabled) {
-						console.log("Connection::accept(): Using audio device: " + localStream.getAudioTracks()[0].label);
-					}
-				}
-			},
-			function(error) {
-				console.log("Device::setup(), getUserMedia error: ", error);
-
-				that.onError("Error in getUserMedia()" + error);
+		if (localStream.getVideoTracks().length > 0) {
+			if (that.debugEnabled) {
+				console.log("Connection::accept(): Using video device: " + localStream.getVideoTracks()[0].label);
 			}
-	);
+		}
+		if (localStream.getAudioTracks().length > 0) {
+			if (that.debugEnabled) {
+				console.log("Connection::accept(): Using audio device: " + localStream.getAudioTracks()[0].label);
+			}
+		}
+
+	}
+	
+	
+	if (parameters['video-source'] == "screen") {
+		this.device.getScreenStream(onMediaStream, parameters);
+	} 
+	else {
+		// webrtc getUserMedia
+		getUserMedia({audio:true, video:(parameters['video-source'] == "video"), fake: parameters['fake-media']}, 
+				onMediaStream,
+				function(error) {
+			console.log("Device::setup(), getUserMedia error: ", error);
+
+			that.onError("Error in getUserMedia()" + error);
+		}
+		);
+	}
 
 }
 
@@ -835,12 +844,12 @@ var RestCommClient = {
 		},
 
 		/**
-		 * Setup RestComm Web Client SDK 'Device' entity. For registrar-less usage you need to omit <i>registrar</i> and <i>domain</i> fields, and later when calling Device.connect() make sure that you use a full SIP URI for the <i>username</i>
+		 * Setup RestComm Web Client SDK 'Device' entity
 		 * @function Device#setup
 		 * @param {string} parameters - Parameters for the Device entity: <br>
 		 * <b>username</b> : Username for the client, i.e. <i>web-sdk</i> <br>
 		 * <b>password</b> : Password to be used in client authentication, i.e. <i>1234</i> <br>
-		 * <b>registrar</b> : URL for the registrar, i.e. <i>wss://cloud.restcomm.com:5063</i>. If you want signalling traffic to be unencrypted you can use <i>ws:</i> instead of <i>wss:</i>, but you need to make sure that you are running in localhost, to workaround the requirement that webrtc works only in secure origins <br>
+		 * <b>registrar</b> : URL for the registrar, i.e. <i>wss://cloud.restcomm.com:5063</i> <br>
 		 * <b>domain</b> : domain to be used, i.e. <i>cloud.restcomm.com</i> <br>
 		 * <b>debug</b> : Enable debug logging in browser console <br>
 		 */
@@ -1020,7 +1029,7 @@ var RestCommClient = {
 		 * @function Device#connect
 		 * @param {varies} arg1 - Callback to be invoked (a) or params (b). In (a) callback will be invoked as: callback(Connection)
 		 * @param {dictionary} arg2 - Parameters for the connection: <br>
-		 * <b>username</b> : Username for the called party, i.e. <i>+1235@cloud.restcomm.com</i>. When not in registrar-less mode you can omit the domain and just use <i>+1235</i> <br>
+		 * <b>username</b> : Username for the called party, i.e. <i>+1235@cloud.restcomm.com</i> <br>
 		 * <b>localMedia</b> : Local media stream, usually an HTML5 video or audio element <br>
 		 * <b>remoteMedia</b> : Remote media stream, usually an HTML5 video or audio element <br>
 		 * <b>videoEnabled</b> : Should we enable video for this call (boolean) <br>
@@ -1051,58 +1060,113 @@ var RestCommClient = {
 				this.connection.parameters = {
 					'From': wrtcConfiguration.sip.sipUserName, 
 					'To': parameters['username'], 
-					'video-enabled': parameters['video-enabled'],
+					'video-enabled': (parameters['video-source'] != 'no-video'),
 				};
 
 				if (!parameters['fake-media']) {
 					parameters['fake-media'] = false;
 				}
 				var that = this;
-				// webrtc getUserMedia
-				getUserMedia({audio:true, video:parameters['video-enabled'], fake: parameters['fake-media']}, 
-						function(stream) {
-							// got local stream as result of getUserMedia() -add it to localVideo html element
-							if (that.debugEnabled) {
-								console.log("Device::connect(), received local WebRTC stream");
-							}
-							parameters['local-media'].src = URL.createObjectURL(stream);
-							localStream = stream;
+				
+				
+				var onMediaStream = function(stream) {
+					// got local stream as result of getUserMedia() -add it to localVideo html element
+					if (that.debugEnabled) {
+						console.log("Device::connect(), received local WebRTC stream");
+					}
+					parameters['local-media'].src = URL.createObjectURL(stream);
+					localStream = stream;
 
-							var callConfiguration = {
-										 displayName: wrtcConfiguration.sip.sipDisplayName,
-										 localMediaStream: localStream,
-										 audioMediaFlag: true,
-										 videoMediaFlag: parameters['video-enabled'],
-										 messageMediaFlag: false,
-										 audioCodecsFilter: '',
-										 videoCodecsFilter: ''
-							};
+					var callConfiguration = {
+							displayName: wrtcConfiguration.sip.sipDisplayName,
+							localMediaStream: localStream,
+							audioMediaFlag: true,
+							videoMediaFlag: (parameters['video-source'] != 'no-video'),
+							messageMediaFlag: false,
+							audioCodecsFilter: '',
+							videoCodecsFilter: ''
+					};
 
-							that.connection.webrtcommCall = wrtcClient.call(parameters['username'], callConfiguration);
+					that.connection.webrtcommCall = wrtcClient.call(parameters['username'], callConfiguration);
 
-							that.status = 'busy';
+					that.status = 'busy';
 
-							if (localStream.getVideoTracks().length > 0) {
-								if (that.debugEnabled) {
-									console.log("Device::connect(): Using video device: " + localStream.getVideoTracks()[0].label);
-								}
-							}
-							if (localStream.getAudioTracks().length > 0) {
-								if (that.debugEnabled) {
-									console.log("Device::connect(): Using audio device: " + localStream.getAudioTracks()[0].label);
-								}
-							}
-						},
-						function(error) {
-							console.log("Device::connect(), getUserMedia error: ", error);
-
-							that.onError("Error in getUserMedia()" + error);
+					if (localStream.getVideoTracks().length > 0) {
+						if (that.debugEnabled) {
+							console.log("Device::connect(): Using video device: " + localStream.getVideoTracks()[0].label);
 						}
-				);
+					}
+					if (localStream.getAudioTracks().length > 0) {
+						if (that.debugEnabled) {
+							console.log("Device::connect(): Using audio device: " + localStream.getAudioTracks()[0].label);
+						}
+					}
+
+				};
+				
+				if (parameters['video-source'] == "screen") {
+					this.getScreenStream(onMediaStream, parameters);
+				} 
+				else {
+					// webrtc getUserMedia
+					getUserMedia({audio:true, video:(parameters['video-source'] == "video"), fake: parameters['fake-media']}, 
+							onMediaStream,
+							function(error) {
+								console.log("Device::connect(), getUserMedia error: ", error);
+		
+								that.onError("Error in getUserMedia()" + error);
+							}
+					);
+				}
 
 				return this.connection;
 			}
 		},
+		
+		getScreenStream: function(onScreenStream, parameters) {
+			var onGotScreenStream  = function(screenStream) {
+				// We need to get audio stream separately to send it with screen stream
+				// http://stackoverflow.com/a/20063211
+				getUserMedia({
+					audio: true
+				}, function (audioStream) {
+					screenStream.addTrack(audioStream.getAudioTracks()[0]);
+					onScreenStream(screenStream, parameters);
+				}, function (error) {
+					console.log("getUserMedia Audio Stream error: " + error);
+					onScreenStream(screenStream, parameters);
+				});		
+			}
+
+			var constraints = {
+					video: {
+						mandatory: {
+							chromeMediaSource: 'desktop',
+							maxWidth: screen.width,
+							maxHeight: screen.height,
+							maxFrameRate: 10
+						}
+					}
+			};
+
+			var extensionMessageHandler = function (msg) {
+				var sourceId = msg.data.sourceId;
+				if (sourceId) {
+					constraints.video.mandatory.chromeMediaSourceId = sourceId;
+					getUserMedia(constraints, onGotScreenStream, function (error) {
+						console.log("getUserMedia Screen Stream error: " + error);
+					});
+				}
+			}
+
+
+			window.addEventListener("message", function (msg) {
+				return extensionMessageHandler(msg)
+			});
+
+			window.postMessage("get-sourceId", "*")
+		}, 
+		
 
 		/**
 		 * Send text message
