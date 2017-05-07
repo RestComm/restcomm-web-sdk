@@ -602,7 +602,7 @@ Connection.prototype.mute = function(arg1)
 			console.log("Connection::mute(): " + muted);
 		}
 
-		if (this.webrtcommCall) {
+		if (this.webrtcommCall && this.status == "open") {
 			if (muted) {
 				this.webrtcommCall.muteLocalAudioMediaStream();
 			}
@@ -615,8 +615,13 @@ Connection.prototype.mute = function(arg1)
 			// Notify asynchronously of the mute action
 			var that = this;
 			setTimeout(function() {
-				 that.onMute(muted, that);
+             if (that.onMute) {				
+				    that.onMute(muted, that);
+             }
 			}, 1);
+		}
+		else {
+			console.error("Connection::mute(): error muting; not connected");
 		}
 	}
 }
@@ -645,7 +650,7 @@ Connection.prototype.muteVideo = function(arg1)
 			console.log("Connection::muteVideo(): " + muted);
 		}
 
-		if (this.webrtcommCall) {
+		if (this.webrtcommCall && this.status == "open") {
 			if (muted) {
 				this.webrtcommCall.hideLocalVideoMediaStream();
 			}
@@ -658,8 +663,13 @@ Connection.prototype.muteVideo = function(arg1)
 			// Notify asynchronously of the mute action
 			var that = this;
 			setTimeout(function() {
-				 that.onMuteVideo(muted, that);
+             if (that.onMuteVideo) {				
+				    that.onMuteVideo(muted, that);
+             }
 			}, 1);
+		}
+		else {
+			console.error("Connection::muteVideo(): error muting; not connected");
 		}
 	}
 }

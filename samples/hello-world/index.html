@@ -58,6 +58,7 @@
 			<div id="log">Loading RestComm client...</div>
 		</div>
 		<img id="logoImage" src="../img/telestax.png"></img>
+		<button id="muteButton">Mute/Unmute</button>
 	</div>
 
 	<script>
@@ -65,10 +66,13 @@
 		var remoteMedia = document.getElementById("remoteMedia");
 		var callButton = document.getElementById("callButton");
 		var hangupButton = document.getElementById("hangupButton");
+		var muteButton = document.getElementById("muteButton");
 		var currentConnection;
+		var muted = false;
 
 		callButton.onclick = call;
 		hangupButton.onclick = hangup;
+		muteButton.onclick = mute;
 
 		var parameters = {
 			'debug': true,
@@ -111,8 +115,23 @@
 			// Make the actual call, using the parameters above
 			currentConnection = RestCommClient.Device.connect(parameters);
 
+			// Pass a callback to get notified when the connection's audio is muted/unmuted
+			currentConnection.mute(function(isMuted, connection) {
+				muted = isMuted; 
+				$("#log").text("Audio mute state: " + isMuted);
+			});
+
+			// Pass a callback to get notified when the connection's video is muted/unmuted
+			/*
+			currentConnection.muteVideo(function(isMuted, connection) {
+				$("#log").text("Video mute state: " + isMuted);
+			});
+			*/
+
 			// Pass a callback to get notified when the connection is disconnected
 			currentConnection.disconnect(function(connection) {
+				// reset muted state since we are disconnected
+				muted = false; 
 				$("#log").text("Connection ended");
 			});
 
@@ -125,6 +144,18 @@
 		// When user presses Hangup, this function is called that makes the actuall call
 		function hangup() {
 			RestCommClient.Device.disconnectAll();
+		}
+
+		// When user presses mute
+		function mute() {
+			if (currentConnection != null) {
+				if (muted == false) {
+					currentConnection.mute(true);
+				}
+				else {
+					currentConnection.mute(false);
+				}
+			}
 		}
 
 		</script>
