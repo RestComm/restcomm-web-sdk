@@ -411,13 +411,16 @@ function Connection(device, status)
 // Default audio constraints to use for better Echo Cancellation behaviour. These are taken from Google Hangouts. Notice that 'Experimental' ones don't seem to take effect
 Connection.defaultAudioConstraints = {
 	googEchoCancellation: true,
-	googExperimentalEchoCancellation: true, 
+	//googExperimentalEchoCancellation: true, 
+	googEchoCancellation2: true, 
 	googAutoGainControl: true, 
-	googExperimentalAutoGainControl: true, 
+	//googExperimentalAutoGainControl: true, 
+	googAutoGainControl2: true, 
 	googNoiseSuppression: true, 
 	googHighpassFilter: true, 
 	googAudioMirroring: false, 
-	googExperimentalNoiseSuppression: true, 
+	//googExperimentalNoiseSuppression: true, 
+	googNoiseSuppression2: true, 
 	deviceId: "default"
 };
 
