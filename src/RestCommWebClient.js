@@ -1068,8 +1068,23 @@ var RestCommClient = {
 					parameters['fake-media'] = false;
 				}
 				var that = this;
+
 				// webrtc getUserMedia
-				getUserMedia({audio:true, video:parameters['video-enabled'], fake: parameters['fake-media']}, 
+				// let's add some defaults for echo cancellation, that resemble the settings Google Hangouts use to address excessive echo in some scenarios. Notice that 'Experimental' ones don't seem to take effect
+				var audioParams = {
+					googEchoCancellation: true,
+					googExperimentalEchoCancellation: true, 
+					googAutoGainControl: true, 
+					googExperimentalAutoGainControl: true, 
+					googNoiseSuppression: true, 
+					googHighpassFilter: true, 
+					googAudioMirroring: false, 
+					googExperimentalNoiseSuppression: true, 
+					deviceId: "default"
+				};
+
+				//getUserMedia({audio:true, video:parameters['video-enabled'], fake: parameters['fake-media']}, 
+				getUserMedia({audio: audioParams, video: parameters['video-enabled'], fake: parameters['fake-media']}, 
 						function(stream) {
 							// got local stream as result of getUserMedia() -add it to localVideo html element
 							if (that.debugEnabled) {
