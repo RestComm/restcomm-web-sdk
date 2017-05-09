@@ -406,6 +406,21 @@ function Connection(device, status)
 	this.webrtcommCall = undefined;  // lower level call structure
 }
 
+// 'Static' Connection variables common to all instances
+
+// Default audio constraints to use for better Echo Cancellation behaviour. These are taken from Google Hangouts. Notice that 'Experimental' ones don't seem to take effect
+Connection.defaultAudioConstraints = {
+	googEchoCancellation: true,
+	googExperimentalEchoCancellation: true, 
+	googAutoGainControl: true, 
+	googExperimentalAutoGainControl: true, 
+	googNoiseSuppression: true, 
+	googHighpassFilter: true, 
+	googAudioMirroring: false, 
+	googExperimentalNoiseSuppression: true, 
+	deviceId: "default"
+};
+
 /**
  * Accept an incoming call
  * @param {dictionary} parameters - Parameters for the connection <br>
@@ -429,8 +444,9 @@ Connection.prototype.accept = function(parameters)
 	}
 
 	var that = this;
+
 	// webrtc getUserMedia
-	getUserMedia({audio:true, video:parameters['video-enabled'], fake: parameters['fake-media']}, 
+	getUserMedia({audio: Connection.defaultAudioConstraints, video: parameters['video-enabled'], fake: parameters['fake-media']}, 
 			function(stream) {
 				// got local stream as result of getUserMedia() -add it to localVideo html element
 				if (that.debugEnabled) {
@@ -1070,21 +1086,8 @@ var RestCommClient = {
 				var that = this;
 
 				// webrtc getUserMedia
-				// let's add some defaults for echo cancellation, that resemble the settings Google Hangouts use to address excessive echo in some scenarios. Notice that 'Experimental' ones don't seem to take effect
-				var audioParams = {
-					googEchoCancellation: true,
-					googExperimentalEchoCancellation: true, 
-					googAutoGainControl: true, 
-					googExperimentalAutoGainControl: true, 
-					googNoiseSuppression: true, 
-					googHighpassFilter: true, 
-					googAudioMirroring: false, 
-					googExperimentalNoiseSuppression: true, 
-					deviceId: "default"
-				};
-
 				//getUserMedia({audio:true, video:parameters['video-enabled'], fake: parameters['fake-media']}, 
-				getUserMedia({audio: audioParams, video: parameters['video-enabled'], fake: parameters['fake-media']}, 
+				getUserMedia({audio: Connection.defaultAudioConstraints, video: parameters['video-enabled'], fake: parameters['fake-media']}, 
 						function(stream) {
 							// got local stream as result of getUserMedia() -add it to localVideo html element
 							if (that.debugEnabled) {
