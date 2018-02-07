@@ -228,9 +228,9 @@ WrtcEventListener.prototype.onWebRTCommCallOpenedEvent = function(webRTCommCall)
 	this.device.connection.webrtcommCall = webRTCommCall;
 
 	// add remote media to the remoteMedia html element
-	remoteMedia.src = URL.createObjectURL(webRTCommCall.getRemoteBundledAudioVideoMediaStream() ||
+	remoteMedia.srcObject = webRTCommCall.getRemoteBundledAudioVideoMediaStream() ||
 				webRTCommCall.getRemoteVideoMediaStream() ||
-				webRTCommCall.getRemoteAudioMediaStream());
+				webRTCommCall.getRemoteAudioMediaStream();
 
 	if (this.device.connection.isIncoming) {
 		this.device.sounds.audioRinging.pause();
@@ -430,13 +430,13 @@ Connection.prototype.accept = function(parameters)
 
 	var that = this;
 	// webrtc getUserMedia
-	getUserMedia({audio:true, video:parameters['video-enabled'], fake: parameters['fake-media']}, 
+	navigator.mediaDevices.getUserMedia({audio:true, video:parameters['video-enabled'], fake: parameters['fake-media']}).then(
 			function(stream) {
 				// got local stream as result of getUserMedia() -add it to localVideo html element
 				if (that.debugEnabled) {
 					console.log("Connection::accept(), received local WebRTC stream");
 				}
-				parameters['local-media'].src = URL.createObjectURL(stream);
+				parameters['local-media'].srcObject = stream;
 				localStream = stream;
 
 				var callConfiguration = {
@@ -464,7 +464,7 @@ Connection.prototype.accept = function(parameters)
 						console.log("Connection::accept(): Using audio device: " + localStream.getAudioTracks()[0].label);
 					}
 				}
-			},
+			}).catch(
 			function(error) {
 				console.log("Device::setup(), getUserMedia error: ", error);
 
@@ -1069,13 +1069,13 @@ var RestCommClient = {
 				}
 				var that = this;
 				// webrtc getUserMedia
-				getUserMedia({audio:true, video:parameters['video-enabled'], fake: parameters['fake-media']}, 
+				navigator.mediaDevices.getUserMedia({audio:true, video:parameters['video-enabled'], fake: parameters['fake-media']}).then(
 						function(stream) {
 							// got local stream as result of getUserMedia() -add it to localVideo html element
 							if (that.debugEnabled) {
 								console.log("Device::connect(), received local WebRTC stream");
 							}
-							parameters['local-media'].src = URL.createObjectURL(stream);
+							parameters['local-media'].srcObject = stream;
 							localStream = stream;
 
 							var callConfiguration = {
@@ -1102,7 +1102,7 @@ var RestCommClient = {
 									console.log("Device::connect(): Using audio device: " + localStream.getAudioTracks()[0].label);
 								}
 							}
-						},
+						}).catch(
 						function(error) {
 							console.log("Device::connect(), getUserMedia error: ", error);
 

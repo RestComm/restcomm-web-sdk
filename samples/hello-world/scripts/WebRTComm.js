@@ -2117,7 +2117,7 @@ WebRTCommCall.prototype.open = function(calleePhoneNumber, configuration) {
 							}
 						}
 
-						if (window.webkitRTCPeerConnection) {
+						if (window.RTCPeerConnection) {
 							var sdpConstraints = {
 								mandatory: {
 									OfferToReceiveAudio: this.configuration.audioMediaFlag,
@@ -2364,7 +2364,7 @@ WebRTCommCall.prototype.close = function(shouldGetStats) {
 			var that = this;
 			this.statsAlreadyRequested = true;
 			console.debug("[PC]: getStats()");
-			this.peerConnection.getStats(null, function(results) {
+			this.peerConnection.getStats().then(function(results) {
 				console.log("WebRTCommCall:close(), received media stats");
 				// do actual hangup now that we got the stats
 				that.hangup();
@@ -2394,7 +2394,7 @@ WebRTCommCall.prototype.getStats = function() {
 		var that = this;
 		this.statsAlreadyRequested = true;
 		console.debug("[PC]: getStats()");
-		this.peerConnection.getStats(null, function(results) {
+		this.peerConnection.getStats().then(function(results) {
 			that.statsAlreadyRequested = false;
 			console.debug("WebRTCommCall:getStats(), received media stats");
 
@@ -2422,14 +2422,14 @@ WebRTCommCall.prototype.getStats = function() {
 	if (this.peerConnection != null && this.statsAlreadyRequested === false) {
 		var that = this;
 		this.statsAlreadyRequested = true;
-		this.peerConnection.getStats(null, function(results) {
+		this.peerConnection.getStats().then(function(results) {
 			console.debug("WebRTCommCall:getStats(), received media stats");
 
 			// normalize the stats
 			that.stats = that.normalizeStats(results);
 
 			setTimeout(function() {
-				that.peerConnection.getStats(null, function(results) {
+				that.peerConnection.getStats().then(function(results) {
 					console.debug("WebRTCommCall:getStats(), received media stats after delay");
 
 					// normalize the stats
@@ -2985,7 +2985,7 @@ WebRTCommCall.prototype.createRTCPeerConnection = function() {
 	var that = this;
 	/* https://code.google.com/p/webrtcomm/issues/detail?id=14 */
 	if (this.webRTCommClient.configuration.RTCPeerConnection.iceServers) {
-		rtcPeerConnectionConfiguration = this.webRTCommClient.configuration.RTCPeerConnection.iceServers;
+		rtcPeerConnectionConfiguration.iceServers = this.webRTCommClient.configuration.RTCPeerConnection.iceServers;
 	} else {
 		if (this.webRTCommClient.configuration.RTCPeerConnection.stunServer) {
 			rtcPeerConnectionConfiguration.iceServers.push({
@@ -3381,7 +3381,7 @@ WebRTCommCall.prototype.onRtcPeerConnectionIceCandidateEvent = function(rtcIceCa
 			console.debug("WebRTCommCall:onRtcPeerConnectionIceCandidateEvent(): this.peerConnectionState=" + this.peerConnectionState);
 			if (this.peerConnection.signalingState !== 'closed') {
 				// Gathering complete is signalled here when rtcIceCandidateEvent.candidate is null
-				if (!rtcIceCandidateEvent.candidate && this.peerConnection.iceGatheringState === 'complete') {
+				if (!rtcIceCandidateEvent.candidate || this.peerConnection.iceGatheringState === 'complete') {
 					if (this.peerConnectionState === 'preparing-offer') {
 						var sdpOfferString = this.peerConnection.localDescription.sdp;
 						var parsedSdpOffer = this.setRtcPeerConnectionLocalDescription(this.peerConnection.localDescription);
@@ -3432,7 +3432,7 @@ WebRTCommCall.prototype.onRtcPeerConnectionCreateOfferSuccessEvent = function(sd
 				// Preparing offer.
 				var that = this;
 				this.peerConnectionState = 'preparing-offer';
-				if (window.webkitRTCPeerConnection) {
+				if (window.RTCPeerConnection) {
 					this.setRtcPeerConnectionLocalDescription(sdpOffer);
 				}
 
@@ -3529,7 +3529,7 @@ WebRTCommCall.prototype.onRtcPeerConnectionCreateOfferErrorEvent = function(erro
 WebRTCommCall.prototype.onRtcPeerConnectionSetLocalDescriptionSuccessEvent = function() {
 	console.debug("[PC]: onSetLocalDescriptionSuccess()");
 	try {
-		console.debug("WebRTCommCall:onRtcPeerConnectionSetLocalDescriptionSuccessEvent():" + JSON.stringify(this.peerConnection));
+		console.debug("WebRTCommCall:onRtcPeerConnectionSetLocalDescriptionSuccessEvent():", this.peerConnection);
 		if (this.peerConnection) {
 			console.debug("WebRTCommCall:onRtcPeerConnectionSetLocalDescriptionSuccessEvent(): this.peerConnection.signalingState=" + this.peerConnection.signalingState);
 			console.debug("WebRTCommCall:onRtcPeerConnectionSetLocalDescriptionSuccessEvent(): this.peerConnection.iceGatheringState=" + this.peerConnection.iceGatheringState);
@@ -3667,7 +3667,7 @@ WebRTCommCall.prototype.onRtcPeerConnectionSetRemoteDescriptionSuccessEvent = fu
 				console.debug("WebRTCommCall:onRtcPeerConnectionSetRemoteDescriptionSuccessEvent(): this.peerConnectionState=" + this.peerConnectionState);
 			} else if (this.peerConnectionState === 'offer-received') {
 				var that = this;
-				if (window.webkitRTCPeerConnection) {
+				if (window.RTCPeerConnection) {
 					var sdpConstraints = {
 						mandatory: {
 							OfferToReceiveAudio: this.configuration.audioMediaFlag,
