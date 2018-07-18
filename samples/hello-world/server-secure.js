@@ -11,3 +11,4 @@ var file = new(static.Server)();
 var app = http.createServer(options, function (req, res) {
   file.serve(req, res);
 }).listen(7443);
+console.log('Server running at https://localhost:7443');
