@@ -59,7 +59,4 @@ Open chrome browser and visit https://localhost:7443/index.html
 
 Click the call button and it will dial 18003333333 via your restcomm cloud account. 
 
-If you do not have a carrier to terminate to the PSTN network, Visit www.telecomsxchange.com/buyerjoin to connect your restcomm cloud account to 300+ Carriers.
-
-
 
